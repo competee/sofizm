@@ -587,7 +587,7 @@ function handle(msg) {
     case 'room_created':
       roomCode = msg.code;
       document.getElementById('room-code').textContent = msg.code;
-      document.getElementById('join-url-text').textContent = `${location.host}`;
+      document.getElementById('join-url-text').textContent = `${location.host}/player.html`;
       break;
 
     case 'player_joined':

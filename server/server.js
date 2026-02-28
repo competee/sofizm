@@ -4,8 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
-const fallacies = JSON.parse(fs.readFileSync('./data/fallacies.json'));
-const topics = JSON.parse(fs.readFileSync('./data/topics.json'));
+const fallacies = JSON.parse(fs.readFileSync(path.join(__dirname, '../data/fallacies.json')));
+const topics = JSON.parse(fs.readFileSync(path.join(__dirname, '../data/topics.json')));
 
 // ─── HTTP SERVER ────────────────────────────────────────────────────────────
 const server = http.createServer((req, res) => {
@@ -388,4 +388,4 @@ wss.on('connection', (ws) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`FallacyMania server running on http://localhost:${PORT}`));
+server.listen(PORT, '0.0.0.0', () => console.log(`FallacyMania running on port ${PORT}`));
