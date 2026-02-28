@@ -295,25 +295,19 @@
     letter-spacing: 0.05em;
   }
 
-  .map-grid-phone {
-    display: grid;
-    grid-template-columns: repeat(9, 1fr);
-    gap: 2px;
-    margin-bottom: 1rem;
+  #hex-map-svg {
+    width: 100%;
+    max-height: 45vh;
+    display: block;
+    margin-bottom: 0.75rem;
+    touch-action: none;
   }
 
-  .map-cell-phone {
-    aspect-ratio: 1;
-    border-radius: 4px;
-    border: 1px solid rgba(255,255,255,0.05);
-    cursor: pointer;
-    transition: all 0.15s;
-    position: relative;
-  }
-
-  .map-cell-phone.capturable { cursor: pointer; box-shadow: 0 0 0 2px white; }
-  .map-cell-phone.selected { box-shadow: 0 0 0 2px var(--gold) !important; transform: scale(0.9); }
-  .map-cell-phone.mine { cursor: default; }
+  .hex-cell { cursor: default; transition: opacity 0.15s; }
+  .hex-cell.capturable { cursor: pointer; }
+  .hex-cell.capturable polygon { stroke: white !important; stroke-width: 2; }
+  .hex-cell.selected polygon { stroke: var(--gold) !important; stroke-width: 3; opacity: 0.85; }
+  .hex-cell.mine polygon { stroke: rgba(255,255,255,0.2); }
 
   .btn-capture {
     background: var(--gold);
@@ -441,7 +435,7 @@
       Натискайте на клітинки щоб захопити їх
     </div>
   </div>
-  <div class="map-grid-phone" id="map-grid-phone"></div>
+  <svg id="hex-map-svg" viewBox="0 0 0 0" xmlns="http://www.w3.org/2000/svg"></svg>
   <button class="btn-capture" id="btn-capture" onclick="confirmCapture()" disabled>Захопити вибране</button>
 </div>
 
@@ -551,14 +545,15 @@ function handle(msg) {
       capturePoints = msg.capturePoints;
       mapData = msg.map;
       selectedCells = [];
+      if (msg.players) { players = {}; msg.players.forEach(p => players[p.id] = p); }
       document.getElementById('capture-pts').textContent = capturePoints;
-      renderMapPhone();
+      renderHexMap();
       showScreen('screen-map');
       break;
 
     case 'map_update':
       mapData = msg.map;
-      renderMapPhone();
+      renderHexMap();
       break;
   }
 }
@@ -645,49 +640,74 @@ function markVoteCast() {
   document.querySelectorAll('.vote-btn').forEach(b => b.classList.add('voted'));
 }
 
-// ── MAP ───────────────────────────────────────────────────────────────────────
+// ── HEX MAP ───────────────────────────────────────────────────────────────────
+function hexOffsets(row) {
+  return row % 2 === 0
+    ? [[-1,-1],[-1,0],[0,-1],[0,1],[1,-1],[1,0]]
+    : [[-1,0],[-1,1],[0,-1],[0,1],[1,0],[1,1]];
+}
+
 function isAdjacentToMe(cellId) {
   if (!mapData) return false;
   const cell = mapData.cells.find(c => c.id === cellId);
   if (!cell || cell.owner === playerId) return false;
-  return [
-    { row: cell.row - 1, col: cell.col },
-    { row: cell.row + 1, col: cell.col },
-    { row: cell.row,     col: cell.col - 1 },
-    { row: cell.row,     col: cell.col + 1 },
-  ].some(n => {
-    const nb = mapData.cells.find(c => c.row === n.row && c.col === n.col);
+  return hexOffsets(cell.row).some(([dr, dc]) => {
+    const nb = mapData.cells.find(c => c.row === cell.row+dr && c.col === cell.col+dc);
     return nb && nb.owner === playerId;
   });
 }
 
-function renderMapPhone() {
+function hexPoints(cx, cy, r) {
+  return Array.from({length:6}, (_,i) => {
+    const a = Math.PI / 180 * (60 * i - 30);
+    return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`;
+  }).join(' ');
+}
+
+function renderHexMap() {
   if (!mapData) return;
-  const grid = document.getElementById('map-grid-phone');
-  grid.innerHTML = mapData.cells.map(cell => {
+  const svg = document.getElementById('hex-map-svg');
+  const R = 14; // hex radius px
+  const W = R * Math.sqrt(3);
+  const H = R * 2;
+  const PAD = R;
+
+  const GRID = mapData.grid;
+  const totalW = GRID * W + PAD * 2;
+  const totalH = GRID * H * 0.75 + H * 0.25 + PAD * 2;
+
+  svg.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
+
+  const groups = mapData.cells.map(cell => {
+    const cx = PAD + cell.col * W + (cell.row % 2 === 1 ? W/2 : 0) + W/2;
+    const cy = PAD + cell.row * H * 0.75 + H/2;
+
     const owner = cell.owner ? players[cell.owner] : null;
-    const bg = owner ? owner.color : 'var(--border)';
+    const fill = owner ? owner.color : '#1e1e2e';
     const isMe = cell.owner === playerId;
     const isSelected = selectedCells.includes(cell.id);
     const adjacent = !isMe && capturePoints > 0 && isAdjacentToMe(cell.id);
-    const cls = [
-      isMe ? 'mine' : '',
-      adjacent ? 'capturable' : '',
-      isSelected ? 'selected' : '',
-    ].filter(Boolean).join(' ');
 
-    return `<div class="map-cell-phone ${cls}"
-      style="background:${bg}"
-      data-id="${cell.id}"
-      onclick="toggleCell(${cell.id})"></div>`;
+    const cls = ['hex-cell', isMe ? 'mine' : '', adjacent ? 'capturable' : '', isSelected ? 'selected' : ''].filter(Boolean).join(' ');
+    const stroke = isSelected ? 'var(--gold)' : adjacent ? 'white' : 'rgba(0,0,0,0.3)';
+    const strokeW = isSelected ? 2.5 : adjacent ? 1.5 : 0.5;
+    const opacity = adjacent ? '1' : isMe ? '1' : '0.85';
+
+    return `<g class="${cls}" onclick="toggleCell(${cell.id})" style="opacity:${opacity}">
+      <polygon points="${hexPoints(cx, cy, R-1)}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}"/>
+      ${isMe ? `<circle cx="${cx}" cy="${cy}" r="3" fill="rgba(255,255,255,0.5)"/>` : ''}
+      ${isSelected ? `<circle cx="${cx}" cy="${cy}" r="4" fill="var(--gold)" opacity="0.8"/>` : ''}
+    </g>`;
   }).join('');
+
+  svg.innerHTML = groups;
 }
 
 function toggleCell(cellId) {
   if (capturePoints <= 0) return;
   const cell = mapData.cells.find(c => c.id === cellId);
   if (!cell || cell.owner === playerId) return;
-  if (!isAdjacentToMe(cellId)) return; // тільки прилеглі
+  if (!isAdjacentToMe(cellId)) return;
 
   const idx = selectedCells.indexOf(cellId);
   if (idx >= 0) {
@@ -696,7 +716,7 @@ function toggleCell(cellId) {
     if (selectedCells.length >= capturePoints) return;
     selectedCells.push(cellId);
   }
-  renderMapPhone();
+  renderHexMap();
   document.getElementById('btn-capture').disabled = selectedCells.length === 0;
 }
 
