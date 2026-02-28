@@ -273,7 +273,15 @@ function gotoRoundEnd(room) {
 }
 
 // ─── WEBSOCKET ────────────────────────────────────────────────────────────────
-const wss = new WebSocket.Server({ server });
+// ─── WEBSOCKET ────────────────────────────────────────────────────────────────
+const wss = new WebSocket.Server({ noServer: true });
+
+server.on('upgrade', (req, socket, head) => {
+  console.log('[WS] Upgrade request:', req.url);
+  wss.handleUpgrade(req, socket, head, (ws) => {
+    wss.emit('connection', ws, req);
+  });
+});
 
 const COLORS = ['#e63946','#2a9d8f','#e9c46a','#f4a261','#457b9d','#8ecae6','#a8dadc','#606c38'];
 
