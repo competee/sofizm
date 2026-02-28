@@ -456,8 +456,8 @@
 
 <script>
 const WS_URL = location.protocol === 'https:'
-  ? `wss://${location.host}`
-  : `ws://${location.host}`;
+  ? `wss://${location.host}/ws`
+  : `ws://${location.host}/ws`;
 
 let ws, playerId, myColor, myName;
 let capturePoints = 0, selectedCells = [], mapData = null, players = {};

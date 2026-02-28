@@ -10,14 +10,30 @@ const topics = JSON.parse(fs.readFileSync(path.join(__dirname, '../data/topics.j
 // ─── HTTP SERVER ────────────────────────────────────────────────────────────
 const server = http.createServer((req, res) => {
   const parsedUrl = url.parse(req.url);
-  let filePath = parsedUrl.pathname === '/' ? '/index.html' : parsedUrl.pathname;
+  const pathname = parsedUrl.pathname;
+
+  // Debug endpoint — відкрий /debug щоб перевірити стан сервера
+  if (pathname === '/debug') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      status: 'ok',
+      rooms: Object.keys(rooms).length,
+      wsClients: wss ? wss.clients.size : 'not ready',
+      node: process.version,
+      uptime: Math.floor(process.uptime()) + 's',
+      env_PORT: process.env.PORT || '(not set, using 3000)',
+    }, null, 2));
+    return;
+  }
+
+  let filePath = pathname === '/' ? '/index.html' : pathname;
   filePath = path.join(__dirname, '../public', filePath);
 
   const ext = path.extname(filePath);
   const mime = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json' };
 
   fs.readFile(filePath, (err, data) => {
-    if (err) { res.writeHead(404); res.end('Not found'); return; }
+    if (err) { res.writeHead(404); res.end('Not found: ' + pathname); return; }
     res.writeHead(200, { 'Content-Type': mime[ext] || 'text/plain' });
     res.end(data);
   });
