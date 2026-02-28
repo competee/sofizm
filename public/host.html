@@ -574,11 +574,34 @@ const WS_URL = location.protocol === 'https:'
 let ws, roomCode, players = {}, map = null, timerInterval = null;
 
 // ── CONNECT ──────────────────────────────────────────────────────────────────
+function setStatus(msg, color) {
+  let el = document.getElementById("debug-status");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "debug-status";
+    el.style.cssText = "position:fixed;bottom:1rem;left:1rem;background:#111;color:#fff;padding:.5rem 1rem;border-radius:8px;font-size:.8rem;font-family:monospace;z-index:9999;border:1px solid #333;max-width:600px;word-break:break-all";
+    document.body.appendChild(el);
+  }
+  el.style.borderColor = color || "#333";
+  el.textContent = msg;
+}
+
 function connect() {
+  setStatus("Підключення до " + WS_URL + "...", "#ffd166");
   ws = new WebSocket(WS_URL);
-  ws.onopen = () => ws.send(JSON.stringify({ type: 'create_room' }));
-  ws.onmessage = e => handle(JSON.parse(e.data));
-  ws.onclose = () => setTimeout(connect, 2000);
+  ws.onopen = () => {
+    setStatus("✓ WebSocket підключено", "#06d6a0");
+    ws.send(JSON.stringify({ type: "create_room" }));
+  };
+  ws.onmessage = e => {
+    try { handle(JSON.parse(e.data)); }
+    catch(err) { setStatus("Помилка парсингу: " + err.message, "#ff3c5f"); }
+  };
+  ws.onerror = () => setStatus("✗ WebSocket помилка — перевір консоль F12", "#ff3c5f");
+  ws.onclose = (e) => {
+    setStatus("✗ З'єднання закрито (код " + e.code + "). Перепідключення...", "#ff3c5f");
+    setTimeout(connect, 3000);
+  };
 }
 
 // ── HANDLE MESSAGES ───────────────────────────────────────────────────────────

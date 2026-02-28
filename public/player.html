@@ -466,8 +466,13 @@ let myVote = null, myTopic = null;
 // ── CONNECT ──────────────────────────────────────────────────────────────────
 function connect() {
   ws = new WebSocket(WS_URL);
+  ws.onopen = () => console.log("WS connected:", WS_URL);
   ws.onmessage = e => handle(JSON.parse(e.data));
-  ws.onclose = () => setTimeout(connect, 2000);
+  ws.onerror = () => showError("Помилка підключення до сервера");
+  ws.onclose = (e) => {
+    showError("З'єднання втрачено ("+e.code+"). Перепідключення...");
+    setTimeout(connect, 3000);
+  };
 }
 
 function send(obj) {

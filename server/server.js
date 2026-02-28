@@ -277,7 +277,8 @@ const wss = new WebSocket.Server({ server });
 
 const COLORS = ['#e63946','#2a9d8f','#e9c46a','#f4a261','#457b9d','#8ecae6','#a8dadc','#606c38'];
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+  console.log('[WS] New connection from', req.socket.remoteAddress);
   ws.on('message', (raw) => {
     let msg;
     try { msg = JSON.parse(raw); } catch { return; }
