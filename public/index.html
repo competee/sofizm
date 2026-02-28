@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FallacyMania</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Unbounded:wght@400;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: #0a0a0f;
+    color: #e8e8f0;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+    padding: 2rem;
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(4rem, 12vw, 8rem);
+    letter-spacing: 0.05em;
+    background: linear-gradient(135deg, #ff3c5f, #ffd166, #06d6a0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+    line-height: 1;
+  }
+  .tagline {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #6b6b80;
+    text-align: center;
+    margin-top: -2rem;
+  }
+  .cards {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .card {
+    background: #13131a;
+    border: 1px solid #1e1e2e;
+    border-radius: 16px;
+    padding: 2rem;
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s;
+  }
+  .card:hover { transform: translateY(-4px); border-color: #ff3c5f; }
+  .card-icon { font-size: 2.5rem; }
+  .card-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 900;
+  }
+  .card-desc { font-size: 0.85rem; color: #6b6b80; line-height: 1.6; }
+  .card-btn {
+    display: inline-block;
+    background: #ff3c5f;
+    color: white;
+    padding: 0.7rem 1.5rem;
+    border-radius: 8px;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-align: center;
+    margin-top: auto;
+    transition: opacity 0.2s;
+  }
+  .card:hover .card-btn { opacity: 0.85; }
+  .card-btn.secondary { background: transparent; border: 1px solid #1e1e2e; color: #e8e8f0; }
+</style>
+</head>
+<body>
+  <div>
+    <div class="logo">FallacyMania</div>
+    <div class="tagline">Гра у логічні помилки · 4.5</div>
+  </div>
+
+  <div class="cards">
+    <a href="/host.html" class="card">
+      <div class="card-icon">🖥️</div>
+      <div class="card-title">Ведучий</div>
+      <div class="card-desc">Відкрийте на великому екрані. Тут створюється кімната, відображається ігровий процес і карта.</div>
+      <div class="card-btn">Відкрити хост</div>
+    </a>
+    <a href="/player.html" class="card">
+      <div class="card-icon">📱</div>
+      <div class="card-title">Гравець</div>
+      <div class="card-desc">Відкрийте на телефоні. Введіть код кімнати і приєднуйтесь до гри зі своїми друзями.</div>
+      <div class="card-btn">Приєднатись</div>
+    </a>
+  </div>
+</body>
+</html>
