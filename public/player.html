@@ -4,740 +4,720 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>FallacyMania — Гравець</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Unbounded:wght@400;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0a0a0f;
-    --surface: #13131a;
-    --border: #1e1e2e;
-    --accent: #ff3c5f;
-    --gold: #ffd166;
-    --teal: #06d6a0;
-    --text: #e8e8f0;
-    --muted: #6b6b80;
-    --my-color: #ff3c5f;
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0a0a0f;--surface:#13131a;--border:#1e1e2e;
+    --text:#e8e8f0;--muted:#6b6b80;
+    --red:#e63946;--teal:#2a9d8f;--gold:#e9c46a;--blue:#457b9d;
   }
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow:hidden}
+  body{display:flex;flex-direction:column}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  .screen{display:none;flex:1;flex-direction:column;padding:1.25rem;gap:.75rem;overflow-y:auto;overflow-x:hidden}
+  .screen.active{display:flex}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    min-height: 100vh;
-    max-width: 430px;
-    margin: 0 auto;
-    overflow-x: hidden;
-  }
+  /* ── JOIN ── */
+  .join-logo{font-family:'Bebas Neue',sans-serif;font-size:3.5rem;text-align:center;
+    background:linear-gradient(135deg,#ff3c5f,#ffd166,#06d6a0);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:.5rem}
+  .input-field{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:.9rem 1.1rem;font-size:1rem;color:var(--text);width:100%;outline:none;
+    font-family:'Inter',sans-serif;transition:border-color .2s}
+  .input-field:focus{border-color:var(--gold)}
+  .btn-join{background:var(--red);color:#fff;border:none;padding:1rem;
+    font-family:'Unbounded',sans-serif;font-size:.85rem;font-weight:700;
+    border-radius:12px;cursor:pointer;width:100%;margin-top:.25rem;transition:opacity .2s}
+  .btn-join:hover{opacity:.85}
+  .error-msg{color:var(--red);font-size:.8rem;text-align:center;min-height:1.2rem}
 
-  .screen { display: none; flex-direction: column; min-height: 100vh; padding: 1.5rem; }
-  .screen.active { display: flex; }
+  /* ── PHASE HEADER ── */
+  .phase-header{padding:.5rem 0;border-bottom:1px solid var(--border);flex-shrink:0}
+  .phase-tag{font-family:'Unbounded',sans-serif;font-size:.6rem;letter-spacing:.15em;
+    text-transform:uppercase;color:var(--muted)}
+  .phase-h{font-family:'Unbounded',sans-serif;font-size:1.1rem;font-weight:900;margin-top:.2rem}
+  .my-civ-bar{display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;
+    background:var(--surface);border-radius:10px;margin-top:.5rem;font-size:.85rem}
 
-  /* ── JOIN SCREEN ── */
-  #screen-join {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1.5rem;
-    min-height: 100vh;
-    padding: 2rem;
-  }
+  /* ── WAITING ── */
+  .waiting-center{flex:1;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:1rem;text-align:center}
+  .waiting-emoji{font-size:4rem}
+  .waiting-text{font-family:'Unbounded',sans-serif;font-size:.9rem}
+  .waiting-sub{font-size:.8rem;color:var(--muted)}
+  .pulse{animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-  .logo-small {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 3rem;
-    letter-spacing: 0.08em;
-    background: linear-gradient(135deg, #ff3c5f, #ffd166);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
+  /* ── CIV SELECT ── */
+  .civ-list{display:flex;flex-direction:column;gap:.6rem;flex:1;overflow-y:auto}
+  .civ-btn{background:var(--surface);border:2px solid var(--border);border-radius:14px;
+    padding:1rem;display:flex;align-items:center;gap:.9rem;cursor:pointer;
+    transition:all .2s;text-align:left;width:100%}
+  .civ-btn:hover:not(:disabled){border-color:var(--gold)}
+  .civ-btn.selected{border-color:var(--teal);background:#2a9d8f15}
+  .civ-btn:disabled{opacity:.45;cursor:default}
+  .civ-btn-emoji{font-size:2rem;flex-shrink:0}
+  .civ-btn-name{font-family:'Unbounded',sans-serif;font-size:.8rem;font-weight:700}
+  .civ-btn-desc{font-size:.7rem;color:var(--muted);margin-top:.2rem;line-height:1.4}
+  .civ-taken{font-size:.65rem;color:var(--red);margin-top:.2rem}
 
-  .input-group { width: 100%; display: flex; flex-direction: column; gap: 0.5rem; }
+  /* ── ATTACK TURN ── */
+  .section-label{font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;
+    color:var(--muted);font-weight:600;margin-bottom:.4rem}
+  .target-list{display:flex;flex-direction:column;gap:.5rem}
+  .target-btn{background:var(--surface);border:2px solid var(--border);border-radius:12px;
+    padding:.8rem 1rem;display:flex;align-items:center;gap:.75rem;cursor:pointer;transition:all .2s;width:100%}
+  .target-btn.selected{border-color:var(--red)}
+  .target-btn-civ{font-size:1.5rem}
 
-  .input-label {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 0.65rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
+  .fact-list{display:flex;flex-direction:column;gap:.5rem;overflow-y:auto;max-height:200px}
+  .fact-btn{background:var(--surface);border:2px solid var(--border);border-radius:10px;
+    padding:.75rem;cursor:pointer;transition:all .2s;text-align:left;width:100%}
+  .fact-btn.selected{border-color:var(--gold)}
+  .fact-btn-title{font-size:.8rem;font-weight:600;color:var(--gold)}
+  .fact-btn-type{font-size:.65rem;color:var(--muted);margin-top:.2rem}
 
-  .input-field {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1rem 1.2rem;
-    color: var(--text);
-    font-family: 'Unbounded', sans-serif;
-    font-size: 1.1rem;
-    font-weight: 700;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .input-field:focus { border-color: var(--accent); }
-  .input-field.name-field { text-transform: none; letter-spacing: 0; }
+  .fallacy-mini-list{display:flex;flex-direction:column;gap:.4rem}
+  .fallacy-mini{background:var(--surface);border:2px solid var(--border);border-radius:10px;
+    padding:.6rem .8rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:.6rem}
+  .fallacy-mini.selected{border-color:var(--red)}
+  .fallacy-mini-name{font-size:.8rem;font-weight:600}
+  .fallacy-mini-tag{font-size:.6rem;padding:.15rem .5rem;border-radius:100px;background:var(--border)}
 
-  .btn-join {
-    width: 100%;
-    background: var(--accent);
-    color: white;
-    border: none;
-    font-family: 'Unbounded', sans-serif;
-    font-size: 1rem;
-    font-weight: 700;
-    padding: 1rem;
-    border-radius: 10px;
-    cursor: pointer;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    transition: all 0.2s;
-  }
-  .btn-join:active { transform: scale(0.97); }
+  .btn-confirm{background:var(--red);color:#fff;border:none;padding:.9rem;
+    font-family:'Unbounded',sans-serif;font-size:.8rem;font-weight:700;
+    border-radius:12px;cursor:pointer;width:100%;transition:opacity .2s;margin-top:.5rem}
+  .btn-confirm:hover{opacity:.85}
+  .btn-confirm:disabled{opacity:.35;cursor:default}
 
-  .error-msg { color: var(--accent); font-size: 0.85rem; text-align: center; min-height: 1.2em; }
+  /* ── DEFENSE ── */
+  .fact-display{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem}
+  .fact-display-title{font-family:'Unbounded',sans-serif;font-size:.85rem;font-weight:700;color:var(--gold);margin-bottom:.5rem}
+  .fact-display-body{font-size:.78rem;color:var(--muted);line-height:1.6}
+  .attacker-angle{font-size:.78rem;color:var(--red);border-left:2px solid var(--red);
+    padding-left:.75rem;margin-top:.75rem;font-style:italic;line-height:1.5}
+  .defender-angle{font-size:.78rem;color:var(--teal);border-left:2px solid var(--teal);
+    padding-left:.75rem;margin-top:.5rem;font-style:italic;line-height:1.5}
 
-  /* ── WAITING SCREEN ── */
-  #screen-waiting {
-    align-items: center;
-    justify-content: center;
-    gap: 1.5rem;
-    text-align: center;
-  }
+  .defense-actions{display:flex;flex-direction:column;gap:.6rem;margin-top:.5rem}
+  .btn-speak{background:var(--teal);color:#fff;border:none;padding:.9rem;
+    font-family:'Unbounded',sans-serif;font-size:.8rem;font-weight:700;
+    border-radius:12px;cursor:pointer;width:100%}
+  .btn-silence{background:transparent;color:var(--muted);border:1px solid var(--border);
+    padding:.75rem;font-size:.8rem;border-radius:12px;cursor:pointer;width:100%}
 
-  .waiting-icon {
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    background: var(--my-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2rem;
-    animation: pulse 2s ease-in-out infinite;
-  }
+  /* ── CANCEL VOTE ── */
+  .cancel-btns{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:1rem}
+  .btn-cancel-vote{padding:1.5rem;border:2px solid;border-radius:14px;
+    font-family:'Unbounded',sans-serif;font-size:.85rem;font-weight:700;
+    cursor:pointer;transition:all .2s;font-size:1.5rem}
+  .btn-cancel-vote.red{border-color:var(--red);color:var(--red);background:#e6394611}
+  .btn-cancel-vote.green{border-color:var(--teal);color:var(--teal);background:#2a9d8f11}
+  .btn-cancel-vote:hover{opacity:.8}
+  .btn-cancel-vote:disabled{opacity:.3;cursor:default}
 
-  @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(255,60,95,0.4); }
-    50% { box-shadow: 0 0 0 20px rgba(255,60,95,0); }
-  }
-
-  .waiting-name {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 1.2rem;
-    font-weight: 700;
-  }
-
-  .waiting-sub { font-size: 0.9rem; color: var(--muted); }
-
-  /* ── TOPIC SELECT ── */
-  .phase-top {
-    margin-bottom: 1.5rem;
-  }
-  .phase-tag {
-    display: inline-block;
-    font-family: 'Unbounded', sans-serif;
-    font-size: 0.6rem;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: var(--accent);
-    background: rgba(255,60,95,0.1);
-    padding: 0.3rem 0.8rem;
-    border-radius: 100px;
-    margin-bottom: 0.5rem;
-  }
-  .phase-h {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2.5rem;
-    letter-spacing: 0.05em;
-    line-height: 1;
-  }
-  .phase-sub { font-size: 0.85rem; color: var(--muted); margin-top: 0.3rem; }
-
-  .topics-list { display: flex; flex-direction: column; gap: 0.75rem; flex: 1; }
-
-  .topic-btn {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.2rem 1.5rem;
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    font-size: 1rem;
-    font-weight: 600;
-    text-align: left;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-  .topic-btn::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, var(--accent), var(--gold));
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-  .topic-btn span { position: relative; z-index: 1; }
-  .topic-btn:active { transform: scale(0.98); }
-  .topic-btn.selected { border-color: var(--teal); background: rgba(6,214,160,0.1); }
-  .topic-btn.selected::before { opacity: 0.05; }
-
-  .chosen-topic {
-    background: var(--surface);
-    border: 1px solid var(--teal);
-    border-radius: 12px;
-    padding: 1.5rem;
-    font-size: 1.1rem;
-    font-weight: 600;
-    text-align: center;
-    color: var(--teal);
-    margin-bottom: 1rem;
-  }
-
-  /* ── FALLACY CARDS ── */
-  .fallacy-cards { display: flex; flex-direction: column; gap: 0.75rem; flex: 1; overflow-y: auto; }
-
-  .fallacy-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.2rem;
-    display: flex;
-    gap: 1rem;
-    align-items: flex-start;
-  }
-
-  .fallacy-num {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2rem;
-    color: var(--accent);
-    line-height: 1;
-    flex-shrink: 0;
-    width: 2.5rem;
-    text-align: center;
-  }
-
-  .fallacy-info {}
-  .fallacy-name {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 0.75rem;
-    font-weight: 700;
-    margin-bottom: 0.3rem;
-  }
-  .fallacy-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
-
-  .topic-reminder {
-    background: linear-gradient(135deg, rgba(255,209,102,0.1), rgba(6,214,160,0.1));
-    border: 1px solid rgba(255,209,102,0.2);
-    border-radius: 10px;
-    padding: 1rem;
-    text-align: center;
-    margin-bottom: 1rem;
-  }
-  .topic-reminder-label {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 0.6rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 0.3rem;
-  }
-  .topic-reminder-text {
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: var(--gold);
-  }
-
-  /* ── VOTE ── */
-  .vote-list { display: flex; flex-direction: column; gap: 0.75rem; flex: 1; }
-
-  .vote-btn {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.2rem 1.5rem;
-    color: var(--text);
-    font-family: 'Unbounded', sans-serif;
-    font-size: 0.9rem;
-    font-weight: 700;
-    text-align: left;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-  .vote-btn.voted { opacity: 0.5; cursor: default; }
-  .vote-btn.my-vote { border-color: var(--teal); background: rgba(6,214,160,0.08); }
-  .vote-btn:active:not(.voted) { transform: scale(0.98); }
+  /* ── RATING ── */
+  .rating-list{display:flex;flex-direction:column;gap:.5rem;flex:1}
+  .rating-item{background:var(--surface);border:2px solid var(--border);border-radius:12px;
+    padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem;cursor:grab}
+  .rating-item.dragging{opacity:.5;cursor:grabbing}
+  .rating-rank{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--muted);width:2rem;text-align:center}
+  .rating-rank.gold{color:var(--gold)}
+  .rating-rank.silver{color:#aaa}
 
   /* ── MAP ── */
-  .capture-info {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1rem 1.5rem;
-    margin-bottom: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .capture-pts-label { font-size: 0.8rem; color: var(--muted); }
-  .capture-pts {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2.5rem;
-    color: var(--gold);
-    letter-spacing: 0.05em;
-  }
-
-  #hex-map-svg {
-    width: 100%;
-    max-height: 45vh;
-    display: block;
-    margin-bottom: 0.75rem;
-    touch-action: none;
-  }
-
-  .hex-cell { cursor: default; transition: opacity 0.15s; }
-  .hex-cell.capturable { cursor: pointer; }
-  .hex-cell.capturable polygon { stroke: white !important; stroke-width: 2; }
-  .hex-cell.selected polygon { stroke: var(--gold) !important; stroke-width: 3; opacity: 0.85; }
-  .hex-cell.mine polygon { stroke: rgba(255,255,255,0.2); }
-
-  .btn-capture {
-    background: var(--gold);
-    color: var(--bg);
-    border: none;
-    font-family: 'Unbounded', sans-serif;
-    font-size: 0.9rem;
-    font-weight: 700;
-    padding: 1rem;
-    border-radius: 10px;
-    cursor: pointer;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    width: 100%;
-    transition: all 0.2s;
-  }
-  .btn-capture:disabled { opacity: 0.4; cursor: not-allowed; }
-  .btn-capture:active:not(:disabled) { transform: scale(0.97); }
-
-  /* ── RESULT ── */
-  #screen-result {
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    gap: 1.5rem;
-  }
-  .result-big {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 5rem;
-    color: var(--gold);
-    letter-spacing: 0.05em;
-    line-height: 1;
-  }
-  .result-msg { font-size: 1rem; color: var(--muted); }
-
-  .status-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--teal);
-    display: inline-block;
-    margin-right: 6px;
-    animation: blink 1.5s ease-in-out infinite;
-  }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  #player-hex-svg{width:100%;max-height:45vh;display:block}
+  .capture-bar{display:flex;align-items:center;justify-content:space-between;
+    background:var(--surface);border-radius:10px;padding:.6rem 1rem}
+  .capture-pts-num{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--gold)}
+  .btn-capture{background:var(--teal);color:#fff;border:none;padding:.8rem 1.5rem;
+    font-family:'Unbounded',sans-serif;font-size:.75rem;font-weight:700;
+    border-radius:10px;cursor:pointer;transition:opacity .2s}
+  .btn-capture:disabled{opacity:.35;cursor:default}
 </style>
 </head>
 <body>
 
 <!-- JOIN -->
-<div id="screen-join">
-  <div class="logo-small">FallacyMania</div>
-  <div class="input-group">
-    <div class="input-label">Код кімнати</div>
-    <input class="input-field" id="code-input" placeholder="ABCD" maxlength="4">
+<div id="screen-join" class="screen active" style="justify-content:center">
+  <div class="join-logo">FallacyMania</div>
+  <div style="display:flex;flex-direction:column;gap:.6rem;max-width:360px;width:100%;margin:0 auto">
+    <input id="name-input" class="input-field" placeholder="Ваше ім'я" maxlength="20">
+    <input id="code-input" class="input-field" placeholder="Код кімнати (4 літери)"
+      maxlength="4" style="text-transform:uppercase;letter-spacing:.2em;font-size:1.2rem;text-align:center">
+    <button class="btn-join" onclick="joinRoom()">Приєднатись</button>
+    <div class="error-msg" id="error-msg"></div>
   </div>
-  <div class="input-group">
-    <div class="input-label">Ваше ім'я</div>
-    <input class="input-field name-field" id="name-input" placeholder="Ваш нікнейм" maxlength="16">
-  </div>
-  <div class="error-msg" id="error-msg"></div>
-  <button class="btn-join" onclick="joinRoom()">Приєднатись</button>
 </div>
 
-<!-- WAITING -->
+<!-- WAITING LOBBY -->
 <div id="screen-waiting" class="screen">
-  <div class="waiting-icon" id="waiting-icon">?</div>
-  <div class="waiting-name" id="waiting-name">Ваше ім'я</div>
-  <div class="waiting-sub"><span class="status-dot"></span>Очікуємо початку гри...</div>
+  <div class="waiting-center">
+    <div class="waiting-emoji pulse" id="my-civ-emoji">👤</div>
+    <div class="waiting-text" id="my-name-display">Ваше ім'я</div>
+    <div id="my-civ-display" style="font-size:.85rem;color:var(--muted)">Очікуємо початку гри...</div>
+  </div>
 </div>
 
-<!-- TOPIC SELECT -->
-<div id="screen-topic" class="screen">
-  <div class="phase-top">
-    <div class="phase-tag">Фаза 1</div>
-    <div class="phase-h">Оберіть тему</div>
-    <div class="phase-sub">Захищайте свою позицію за допомогою софізмів</div>
+<!-- CIV SELECT -->
+<div id="screen-civ" class="screen">
+  <div class="phase-header">
+    <div class="phase-tag">Крок 1</div>
+    <div class="phase-h">Оберіть цивілізацію</div>
   </div>
-  <div class="topics-list" id="topics-list"></div>
+  <div class="civ-list" id="civ-list"></div>
 </div>
 
-<!-- TOPIC CHOSEN -->
-<div id="screen-topic-done" class="screen">
-  <div class="phase-top">
-    <div class="phase-tag">Тема обрана ✓</div>
-    <div class="phase-h">Чудово!</div>
+<!-- WAITING (in-game) -->
+<div id="screen-waiting-game" class="screen">
+  <div class="my-civ-bar">
+    <span id="wg-civ-emoji">👤</span>
+    <div>
+      <div style="font-size:.85rem;font-weight:600" id="wg-name">—</div>
+      <div style="font-size:.7rem;color:var(--muted)" id="wg-civ">—</div>
+    </div>
   </div>
-  <div class="chosen-topic" id="chosen-topic-display"></div>
-  <div class="waiting-sub" style="text-align:center"><span class="status-dot"></span>Чекаємо інших гравців...</div>
+  <div class="waiting-center">
+    <div style="font-size:2.5rem;animation:pulse 2s infinite" id="wg-icon">⏳</div>
+    <div class="waiting-text" id="wg-message">Зачекайте...</div>
+    <div class="waiting-sub" id="wg-sub"></div>
+  </div>
 </div>
 
-<!-- FALLACY DEAL -->
-<div id="screen-fallacy" class="screen">
-  <div class="phase-top">
-    <div class="phase-tag">Фаза 2 — Ваші картки</div>
-    <div class="phase-h">Готуйте промову</div>
+<!-- ATTACK TURN -->
+<div id="screen-attack" class="screen">
+  <div class="phase-header">
+    <div class="phase-tag">⚔️ Ваш хід — Атака</div>
+    <div class="phase-h">Оберіть ціль і аргумент</div>
   </div>
-  <div class="topic-reminder" id="topic-reminder-box">
-    <div class="topic-reminder-label">Ваша тема</div>
-    <div class="topic-reminder-text" id="topic-reminder-text"></div>
-  </div>
-  <div class="fallacy-cards" id="fallacy-cards"></div>
+
+  <div class="section-label">Ціль атаки</div>
+  <div class="target-list" id="target-list"></div>
+
+  <div class="section-label" id="fact-section-label" style="display:none">Факт конфронтації</div>
+  <div class="fact-list" id="fact-list"></div>
+
+  <div class="section-label">Ваші картки-софізми</div>
+  <div class="fallacy-mini-list" id="attack-fallacies"></div>
+
+  <button class="btn-confirm" id="btn-attack-confirm" onclick="confirmAttack()" disabled>
+    ⚔️ Атакую! (потім виступаю вголос)
+  </button>
 </div>
 
-<!-- VOTE -->
-<div id="screen-vote" class="screen">
-  <div class="phase-top">
-    <div class="phase-tag">Фаза 4 — Голосування</div>
-    <div class="phase-h">Хто найкраще?</div>
-    <div class="phase-sub">Голосуйте за найсильнішого спікера</div>
+<!-- DEFENSE TURN -->
+<div id="screen-defense" class="screen">
+  <div class="phase-header">
+    <div class="phase-tag">🛡️ Захист</div>
+    <div class="phase-h">Вас атакують!</div>
   </div>
-  <div class="vote-list" id="vote-list"></div>
+  <div class="fact-display" id="defense-fact-display"></div>
+  <div class="section-label" style="margin-top:.5rem">Ваші картки-софізми для захисту</div>
+  <div class="fallacy-mini-list" id="defense-fallacies"></div>
+  <div class="defense-actions">
+    <button class="btn-speak" onclick="chooseDefense('speak')">
+      🗣️ Захищаюсь (вибери картку і виступи)
+    </button>
+    <button class="btn-silence" onclick="chooseDefense('silence')">
+      🤐 Промовчати (-1 бал, але безпечно)
+    </button>
+  </div>
+</div>
+
+<!-- CANCEL VOTE -->
+<div id="screen-cancel" class="screen">
+  <div class="phase-header">
+    <div class="phase-tag">🚫 Голосування</div>
+    <div class="phase-h">Cancel захисник?</div>
+  </div>
+  <div style="background:var(--surface);border-radius:12px;padding:1rem;text-align:center">
+    <div style="font-size:1.5rem" id="cancel-defender-emoji">🛡️</div>
+    <div style="font-family:'Unbounded',sans-serif;font-size:.95rem;margin-top:.4rem" id="cancel-defender-name">—</div>
+    <div style="font-size:.8rem;color:var(--muted);margin-top:.25rem">Чи переконливо захищався?</div>
+  </div>
+  <div class="cancel-btns" id="cancel-btns">
+    <button class="btn-cancel-vote red" onclick="castCancelVote('cancel')">🚫<br><span style="font-size:.7rem;font-family:'Unbounded',sans-serif">Cancel</span></button>
+    <button class="btn-cancel-vote green" onclick="castCancelVote('ok')">✅<br><span style="font-size:.7rem;font-family:'Unbounded',sans-serif">OK</span></button>
+  </div>
+  <div id="cancel-voted-msg" style="display:none;text-align:center;padding:1rem;color:var(--muted);font-size:.85rem">
+    ✓ Ваш голос враховано
+  </div>
+</div>
+
+<!-- RATING -->
+<div id="screen-rating" class="screen">
+  <div class="phase-header">
+    <div class="phase-tag">⭐ Рейтинг</div>
+    <div class="phase-h">Хто виступив найкраще?</div>
+  </div>
+  <div style="font-size:.8rem;color:var(--muted)">Перетягніть гравців — від найкращого до найгіршого</div>
+  <div class="rating-list" id="rating-list"></div>
+  <button class="btn-confirm" id="btn-rating-confirm" onclick="submitRating()">⭐ Підтвердити рейтинг</button>
 </div>
 
 <!-- MAP -->
 <div id="screen-map" class="screen">
-  <div class="phase-top">
-    <div class="phase-tag">Фаза 5 — Захват</div>
-    <div class="phase-h">Карта світу</div>
+  <div class="phase-header">
+    <div class="phase-tag">🗺️ Захват</div>
+    <div class="phase-h">Оберіть клітинки</div>
   </div>
-  <div class="capture-info">
+  <div class="capture-bar">
     <div>
-      <div class="capture-pts-label">Очки для захвату</div>
-      <div class="capture-pts" id="capture-pts">0</div>
+      <div style="font-size:.7rem;color:var(--muted)">Очки для захвату</div>
+      <div class="capture-pts-num" id="capture-pts">0</div>
     </div>
-    <div style="font-size:0.8rem; color:var(--muted); max-width:160px; text-align:right">
-      Натискайте на клітинки щоб захопити їх
-    </div>
+    <button class="btn-capture" id="btn-capture" onclick="confirmCapture()" disabled>Захопити</button>
   </div>
-  <svg id="hex-map-svg" viewBox="0 0 0 0" xmlns="http://www.w3.org/2000/svg"></svg>
-  <button class="btn-capture" id="btn-capture" onclick="confirmCapture()" disabled>Захопити вибране</button>
+  <svg id="player-hex-svg" viewBox="0 0 0 0" xmlns="http://www.w3.org/2000/svg"></svg>
 </div>
 
-<!-- RESULT (waiting between rounds) -->
+<!-- RESULT -->
 <div id="screen-result" class="screen">
-  <div class="result-big" id="result-pts">+0</div>
-  <div class="result-msg">очки за цей раунд</div>
-  <div style="margin-top:1rem; color:var(--muted); font-size:0.85rem">
-    <span class="status-dot"></span>Раунд завершується...
+  <div class="waiting-center">
+    <div style="font-size:1rem;color:var(--muted)">Очки за раунд</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:6rem;color:var(--gold)" id="result-pts">0</div>
+    <div class="waiting-sub pulse">Наступний раунд...</div>
   </div>
 </div>
 
 <script>
-const WS_URL = location.protocol === 'https:'
+const WS_URL = location.protocol==='https:'
   ? `wss://${location.host}/ws`
   : `ws://${location.host}/ws`;
 
 let ws, playerId, myColor, myName;
-let capturePoints = 0, selectedCells = [], mapData = null, players = {};
-let myVote = null, myTopic = null;
+let myCivId=null, myCivName=null, myCivEmoji=null;
+let capturePoints=0, selectedCells=[], mapData=null, mapPlayers={};
+let attackState={ targetId:null, factId:null, fallacyId:null, cards:[], targets:[], factsPreview:{} };
+let defenseState={ cards:[], fallacyId:null };
+let ratingOrder=[];
+let players={};
 
-// ── CONNECT ──────────────────────────────────────────────────────────────────
+// ── CONNECT ───────────────────────────────────────────────────────────────────
 function connect() {
   ws = new WebSocket(WS_URL);
-  ws.onopen = () => console.log("WS connected:", WS_URL);
-  ws.onmessage = e => handle(JSON.parse(e.data));
-  ws.onerror = () => showError("Помилка підключення до сервера");
-  ws.onclose = (e) => {
-    showError("З'єднання втрачено ("+e.code+"). Перепідключення...");
-    setTimeout(connect, 3000);
-  };
+  ws.onopen = () => console.log('WS connected');
+  ws.onmessage = e => { try{ handle(JSON.parse(e.data)); }catch(err){ console.error(err); } };
+  ws.onerror = () => showError('Помилка підключення');
+  ws.onclose = e => { showError('З\'єднання втрачено. Перепідключення...'); setTimeout(connect,3000); };
 }
-
-function send(obj) {
-  if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
-}
+function send(obj){ if(ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify(obj)); }
 
 // ── JOIN ──────────────────────────────────────────────────────────────────────
-function joinRoom() {
-  const code = document.getElementById('code-input').value.trim().toUpperCase();
-  const name = document.getElementById('name-input').value.trim() || 'Гравець';
-  if (code.length < 4) { showError('Введіть 4-літерний код'); return; }
-
-  myName = name;
-  send({ type: 'join_room', code, name });
+function joinRoom(){
+  const code=document.getElementById('code-input').value.trim().toUpperCase();
+  const name=document.getElementById('name-input').value.trim()||'Гравець';
+  if(code.length<4){ showError('Введіть 4-літерний код'); return; }
+  myName=name;
+  send({ type:'join_room', code, name });
 }
-
-function showError(msg) {
-  document.getElementById('error-msg').textContent = msg;
-  setTimeout(() => document.getElementById('error-msg').textContent = '', 3000);
+function showError(msg){
+  document.getElementById('error-msg').textContent=msg;
+  setTimeout(()=>document.getElementById('error-msg').textContent='',3000);
 }
 
 // ── HANDLE ────────────────────────────────────────────────────────────────────
-function handle(msg) {
-  switch(msg.type) {
+function handle(msg){
+  switch(msg.type){
     case 'joined':
-      playerId = msg.playerId;
-      myColor = msg.color;
-      document.documentElement.style.setProperty('--my-color', myColor);
+      playerId=msg.playerId; myColor=msg.color;
+      document.getElementById('my-name-display').textContent=myName;
+      document.getElementById('wg-name').textContent=myName;
       showScreen('screen-waiting');
-      document.getElementById('waiting-icon').textContent = myName.charAt(0).toUpperCase();
-      document.getElementById('waiting-icon').style.background = myColor;
-      document.getElementById('waiting-name').textContent = myName;
       break;
 
     case 'player_joined':
-      updatePlayers(msg.players);
+    case 'player_left':
+    case 'civ_update':
+      if(msg.players){ players={}; msg.players.forEach(p=>players[p.id]=p); }
       break;
 
     case 'error':
-      showError(msg.msg);
-      break;
+      showError(msg.msg); break;
 
-    case 'topic_options':
-      showScreen('screen-topic');
-      renderTopics(msg.topics);
-      break;
-
-    case 'topic_chosen':
-      myTopic = msg.topic;
-      document.getElementById('chosen-topic-display').textContent = msg.topic;
-      showScreen('screen-topic-done');
-      break;
-
-    case 'fallacy_deal':
-      myTopic = msg.yourTopic;
-      document.getElementById('topic-reminder-text').textContent = msg.yourTopic;
-      renderFallacyCards(msg.cards);
-      showScreen('screen-fallacy');
+    case 'civ_chosen':
+      myCivId=msg.civ.id; myCivName=msg.civ.name; myCivEmoji=msg.civ.emoji;
+      document.getElementById('my-civ-emoji').textContent=msg.civ.emoji;
+      document.getElementById('my-civ-display').textContent=msg.civ.name;
+      setWaiting('✓','Цивілізацію обрано','Чекаємо інших гравців...');
+      showScreen('screen-waiting');
       break;
 
     case 'phase':
-      handlePhase(msg);
+      handlePhase(msg); break;
+
+    case 'round_start':
+      if(msg.players){ players={}; msg.players.forEach(p=>players[p.id]=p); }
+      setWaiting('⚔️','Раунд ' + msg.round + ' починається','Готуйтесь!');
+      showScreen('screen-waiting-game');
       break;
 
-    case 'vote_cast':
-      markVoteCast();
+    case 'your_attack_turn':
+      renderAttackTurn(msg); break;
+
+    case 'your_defense_turn':
+      renderDefenseTurn(msg); break;
+
+    case 'defense_result':
+      if(msg.defenderId===playerId && msg.choice==='silence'){
+        setWaiting('🤐','Ви промовчали','Наступна атака...');
+        showScreen('screen-waiting-game');
+      }
       break;
 
-    case 'vote_result':
-      const myPts = msg.roundScores[playerId] || 0;
-      document.getElementById('result-pts').textContent = `+${myPts}`;
+    case 'cancel_result':
+      setWaiting(msg.cancelled?'✗':'✓',
+        msg.cancelled?'Ваш захист скасовано (-4)':'Захист прийнятий (+3)',
+        'Наступна атака...');
+      showScreen('screen-waiting-game');
+      break;
+
+    case 'rating_result':
+      const myPts = msg.roundScores?.[playerId]||0;
+      document.getElementById('result-pts').textContent = (myPts>=0?'+':'')+myPts;
       showScreen('screen-result');
       break;
 
     case 'map_turn':
-      capturePoints = msg.capturePoints;
-      mapData = msg.map;
-      selectedCells = [];
-      if (msg.players) { players = {}; msg.players.forEach(p => players[p.id] = p); }
-      document.getElementById('capture-pts').textContent = capturePoints;
+      capturePoints=msg.capturePoints||0;
+      mapData=msg.map;
+      if(msg.players){ mapPlayers={}; msg.players.forEach(p=>mapPlayers[p.id]=p); }
+      document.getElementById('capture-pts').textContent=capturePoints;
+      selectedCells=[];
       renderHexMap();
       showScreen('screen-map');
       break;
 
     case 'map_update':
-      mapData = msg.map;
-      renderHexMap();
+      mapData=msg.map; renderHexMap(); break;
+  }
+}
+
+function handlePhase(msg){
+  if(msg.players){ players={}; msg.players.forEach(p=>players[p.id]=p); }
+  switch(msg.phase){
+    case 'civ_select':
+      renderCivSelect(msg.civilizations); showScreen('screen-civ'); break;
+    case 'attack_prep':
+      if(msg.attackerId!==playerId){
+        const a=players[msg.attackerId];
+        setWaiting(a?.civEmoji||'⚔️',
+          `${a?.name||'?'} атакує...`,
+          `${a?.civName||''} готує аргументи`);
+        showScreen('screen-waiting-game');
+      }
       break;
+    case 'defense':
+      if(msg.defenderId!==playerId){
+        const d=players[msg.defenderId];
+        setWaiting(d?.civEmoji||'🛡️',
+          `${d?.name||'?'} захищається...`,
+          '');
+        showScreen('screen-waiting-game');
+      }
+      break;
+    case 'cancel_vote':
+      if(msg.defenderId!==playerId){
+        const d=players[msg.defenderId];
+        document.getElementById('cancel-defender-emoji').textContent=d?.civEmoji||'🛡️';
+        document.getElementById('cancel-defender-name').textContent=`${d?.name||'?'} — ${d?.civName||''}`;
+        document.querySelectorAll('.btn-cancel-vote').forEach(b=>b.disabled=false);
+        document.getElementById('cancel-voted-msg').style.display='none';
+        document.getElementById('cancel-btns').style.display='grid';
+        showScreen('screen-cancel');
+      } else {
+        setWaiting('🚫','Гравці голосують...','Чи прийнятий ваш захист?');
+        showScreen('screen-waiting-game');
+      }
+      break;
+    case 'rating':
+      renderRating(); showScreen('screen-rating'); break;
+    case 'round_end':
+      setWaiting('🏁','Кінець раунду','Наступний скоро...');
+      showScreen('screen-waiting-game'); break;
   }
 }
 
-function updatePlayers(list) {
-  players = {};
-  list.forEach(p => players[p.id] = p);
+function setWaiting(icon,text,sub){
+  document.getElementById('wg-icon').textContent=icon;
+  document.getElementById('wg-message').textContent=text;
+  document.getElementById('wg-sub').textContent=sub||'';
+  document.getElementById('wg-civ-emoji').textContent=myCivEmoji||'👤';
+  document.getElementById('wg-civ').textContent=myCivName||'';
 }
 
-function handlePhase(msg) {
-  if (msg.phase === 'speech') {
-    showScreen('screen-fallacy'); // keep fallacy cards visible during speech
-  }
-  if (msg.phase === 'vote') {
-    renderVoteList(msg.players || []);
-    showScreen('screen-vote');
-  }
-  if (msg.phase === 'round_end') {
-    showScreen('screen-result');
-  }
-  if (msg.phase === 'topic_select') {
-    myTopic = null; myVote = null; selectedCells = [];
-    // topic_options will come separately
-  }
-}
-
-// ── TOPICS ────────────────────────────────────────────────────────────────────
-function renderTopics(topics) {
-  const list = document.getElementById('topics-list');
-  list.innerHTML = topics.map((t, i) => `
-    <button class="topic-btn" onclick="chooseTopic(${i}, this)">
-      <span>${t}</span>
-    </button>
-  `).join('');
-  list._topics = topics;
-}
-
-function chooseTopic(idx, btn) {
-  const topic = document.getElementById('topics-list')._topics[idx];
-  document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  send({ type: 'choose_topic', topic });
-}
-
-// ── FALLACY CARDS ─────────────────────────────────────────────────────────────
-function renderFallacyCards(cards) {
-  const el = document.getElementById('fallacy-cards');
-  el.innerHTML = cards.map((c, i) => `
-    <div class="fallacy-card">
-      <div class="fallacy-num">${i + 1}</div>
-      <div class="fallacy-info">
-        <div class="fallacy-name">${c.name}</div>
-        <div class="fallacy-desc">${c.desc}</div>
+// ── CIV SELECT ────────────────────────────────────────────────────────────────
+function renderCivSelect(civs){
+  const el=document.getElementById('civ-list');
+  el.innerHTML=civs.map(c=>{
+    const takenBy=Object.values(players).find(p=>p.civId===c.id && p.id!==playerId);
+    return `<button class="civ-btn" ${takenBy?'disabled':''} onclick="chooseCiv('${c.id}',this)">
+      <div class="civ-btn-emoji">${c.emoji}</div>
+      <div>
+        <div class="civ-btn-name">${c.name}</div>
+        <div class="civ-btn-desc">${c.description||c.era}</div>
+        ${takenBy?`<div class="civ-taken">✗ Обрано: ${takenBy.name}</div>`:''}
       </div>
-    </div>
-  `).join('');
+    </button>`;
+  }).join('');
 }
 
-// ── VOTE ──────────────────────────────────────────────────────────────────────
-function renderVoteList(playerList) {
-  myVote = null;
-  const el = document.getElementById('vote-list');
-  el.innerHTML = playerList
-    .filter(p => p.id !== playerId)
-    .map(p => `
-      <button class="vote-btn" id="vote-${p.id}" onclick="castVote('${p.id}', this)">
-        <div style="width:14px;height:14px;border-radius:50%;background:${p.color};flex-shrink:0"></div>
-        ${p.name}
-      </button>
-    `).join('');
+function chooseCiv(civId,btn){
+  document.querySelectorAll('.civ-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  send({ type:'choose_civ', civId });
 }
 
-function castVote(targetId, btn) {
-  if (myVote) return;
-  myVote = targetId;
-  send({ type: 'vote', targetId });
-  document.querySelectorAll('.vote-btn').forEach(b => {
-    b.classList.add('voted');
+// ── ATTACK TURN ───────────────────────────────────────────────────────────────
+function renderAttackTurn(msg){
+  attackState={ targetId:null, factId:null, fallacyId:null,
+    cards:msg.cards||[], targets:msg.targets||[], factsPreview:msg.factsPreview||{} };
+
+  // Цілі
+  const tl=document.getElementById('target-list');
+  tl.innerHTML=msg.targets.map(t=>`
+    <button class="target-btn" onclick="selectTarget('${t.id}',this)">
+      <div class="target-btn-civ">${t.civEmoji||'👤'}</div>
+      <div>
+        <div style="font-weight:600;font-size:.9rem">${t.name}</div>
+        <div style="font-size:.75rem;color:var(--muted)">${t.civName||''}</div>
+      </div>
+    </button>`).join('');
+
+  document.getElementById('fact-section-label').style.display='none';
+  document.getElementById('fact-list').innerHTML='';
+
+  // Картки
+  renderFallacyMiniList('attack-fallacies', msg.cards||[], id=>{
+    attackState.fallacyId=id; checkAttackReady();
   });
-  btn.classList.add('my-vote');
+
+  document.getElementById('btn-attack-confirm').disabled=true;
+  showScreen('screen-attack');
 }
 
-function markVoteCast() {
-  document.querySelectorAll('.vote-btn').forEach(b => b.classList.add('voted'));
+function selectTarget(id,btn){
+  attackState.targetId=id; attackState.factId=null;
+  document.querySelectorAll('.target-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  // Показуємо факти для цієї цілі
+  const facts=attackState.factsPreview[id]||[];
+  document.getElementById('fact-section-label').style.display='block';
+  const fl=document.getElementById('fact-list');
+  fl.innerHTML=facts.map(f=>`
+    <button class="fact-btn" onclick="selectFact('${f.id}',this)">
+      <div class="fact-btn-title">📜 ${f.title}</div>
+    </button>`).join('');
+  checkAttackReady();
+}
+
+function selectFact(id,btn){
+  attackState.factId=id;
+  document.querySelectorAll('.fact-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  checkAttackReady();
+}
+
+function checkAttackReady(){
+  const ok=attackState.targetId&&attackState.factId&&attackState.fallacyId;
+  document.getElementById('btn-attack-confirm').disabled=!ok;
+}
+
+function confirmAttack(){
+  send({ type:'choose_attack', defenderId:attackState.targetId,
+    factId:attackState.factId, fallacyId:attackState.fallacyId });
+  setWaiting('🗣️','Тепер виступайте вголос!','Використайте свій факт і софізм');
+  showScreen('screen-waiting-game');
+}
+
+// ── DEFENSE TURN ──────────────────────────────────────────────────────────────
+function renderDefenseTurn(msg){
+  defenseState={ cards:msg.cards||[], fallacyId:null };
+
+  const fd=document.getElementById('defense-fact-display');
+  if(msg.fact){
+    fd.innerHTML=`
+      <div class="fact-display-title">📜 ${msg.fact.title}</div>
+      <div class="fact-display-body">${msg.fact.body}</div>
+      <div class="attacker-angle">⚔️ Аргумент проти вас: ${msg.attackerAngle||msg.fact.defender_angle}</div>
+      ${msg.fact.defender_angle?`<div class="defender-angle">🛡️ Підказка: ${msg.fact.defender_angle}</div>`:''}`;
+  }
+
+  renderFallacyMiniList('defense-fallacies', msg.cards||[], id=>{
+    defenseState.fallacyId=id;
+  });
+
+  showScreen('screen-defense');
+}
+
+function chooseDefense(choice){
+  if(choice==='silence'){
+    send({ type:'defense_choice', choice:'silence' });
+  } else {
+    send({ type:'defense_choice', choice:'speak', fallacyId:defenseState.fallacyId, speech:true });
+    setWaiting('🗣️','Захищайтесь вголос!','Потім гравці проголосують за cancel');
+    showScreen('screen-waiting-game');
+  }
+}
+
+// ── CANCEL VOTE ───────────────────────────────────────────────────────────────
+function castCancelVote(vote){
+  send({ type:'cancel_vote', vote });
+  document.querySelectorAll('.btn-cancel-vote').forEach(b=>b.disabled=true);
+  document.getElementById('cancel-btns').style.display='none';
+  document.getElementById('cancel-voted-msg').style.display='block';
+}
+
+// ── RATING ────────────────────────────────────────────────────────────────────
+function renderRating(){
+  const plist=Object.values(players).filter(p=>p.id!==playerId);
+  ratingOrder=plist.map(p=>p.id);
+  const rl=document.getElementById('rating-list');
+  rl.innerHTML=plist.map((p,i)=>`
+    <div class="rating-item" data-id="${p.id}" draggable="true">
+      <div class="rating-rank ${i===0?'gold':i===1?'silver':''}">${i+1}</div>
+      <div style="font-size:1.3rem">${p.civEmoji||'👤'}</div>
+      <div>
+        <div style="font-weight:600;font-size:.9rem">${p.name}</div>
+        <div style="font-size:.7rem;color:var(--muted)">${p.civName||''}</div>
+      </div>
+    </div>`).join('');
+  initDragSort();
+}
+
+function initDragSort(){
+  const list=document.getElementById('rating-list');
+  let dragging=null;
+  list.querySelectorAll('.rating-item').forEach(item=>{
+    item.addEventListener('dragstart',()=>{ dragging=item; item.classList.add('dragging'); });
+    item.addEventListener('dragend',()=>{ item.classList.remove('dragging'); updateRatingOrder(); });
+    item.addEventListener('dragover',e=>{ e.preventDefault();
+      const after=getDragAfter(list,e.clientY);
+      if(after) list.insertBefore(dragging,after);
+      else list.appendChild(dragging);
+    });
+  });
+}
+
+function getDragAfter(list,y){
+  return [...list.querySelectorAll('.rating-item:not(.dragging)')]
+    .find(el=>el.getBoundingClientRect().top+el.getBoundingClientRect().height/2>y);
+}
+
+function updateRatingOrder(){
+  const items=document.querySelectorAll('#rating-list .rating-item');
+  ratingOrder=[...items].map(el=>el.dataset.id);
+  // Оновлюємо номери
+  items.forEach((el,i)=>{
+    const rank=el.querySelector('.rating-rank');
+    rank.textContent=i+1;
+    rank.className='rating-rank '+(i===0?'gold':i===1?'silver':'');
+  });
+}
+
+function submitRating(){
+  send({ type:'submit_rating', ranked:ratingOrder });
+  document.getElementById('btn-rating-confirm').disabled=true;
+}
+
+// ── FALLACY HELPER ────────────────────────────────────────────────────────────
+function renderFallacyMiniList(elId, cards, onSelect){
+  const el=document.getElementById(elId);
+  const tagColors={'атака':'#e63946','спотворення':'#f4a261','логіка':'#118ab2',
+    'авторитет':'#8ecae6','маніпуляція':'#e9c46a','відволікання':'#2a9d8f'};
+  el.innerHTML=cards.map(c=>`
+    <div class="fallacy-mini" onclick="selectFallacyMini(this,'${elId}','${c.id}')">
+      <div>
+        <div class="fallacy-mini-name">${c.name}</div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem">${c.desc||c.hint||''}</div>
+      </div>
+      <span class="fallacy-mini-tag" style="background:${tagColors[c.tag]||'var(--border)'}22;
+        color:${tagColors[c.tag]||'var(--muted)'};margin-left:auto;white-space:nowrap">${c.tag||''}</span>
+    </div>`).join('');
+  el._onSelect=onSelect;
+}
+
+function selectFallacyMini(el,listId,id){
+  document.querySelectorAll(`#${listId} .fallacy-mini`).forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+  const list=document.getElementById(listId);
+  if(list._onSelect) list._onSelect(parseInt(id));
 }
 
 // ── HEX MAP ───────────────────────────────────────────────────────────────────
-function hexOffsets(row) {
-  return row % 2 === 0
-    ? [[-1,-1],[-1,0],[0,-1],[0,1],[1,-1],[1,0]]
-    : [[-1,0],[-1,1],[0,-1],[0,1],[1,0],[1,1]];
+function hexOffsets(row){
+  return row%2===0?[[-1,-1],[-1,0],[0,-1],[0,1],[1,-1],[1,0]]:[[-1,0],[-1,1],[0,-1],[0,1],[1,0],[1,1]];
 }
-
-function isAdjacentToMe(cellId) {
-  if (!mapData) return false;
-  const cell = mapData.cells.find(c => c.id === cellId);
-  if (!cell || cell.owner === playerId) return false;
-  return hexOffsets(cell.row).some(([dr, dc]) => {
-    const nb = mapData.cells.find(c => c.row === cell.row+dr && c.col === cell.col+dc);
-    return nb && nb.owner === playerId;
+function isAdjacentToMe(cellId){
+  if(!mapData) return false;
+  const cell=mapData.cells.find(c=>c.id===cellId);
+  if(!cell||cell.owner===playerId) return false;
+  return hexOffsets(cell.row).some(([dr,dc])=>{
+    const nb=mapData.cells.find(c=>c.row===cell.row+dr&&c.col===cell.col+dc);
+    return nb&&nb.owner===playerId;
   });
 }
-
-function hexPoints(cx, cy, r) {
-  return Array.from({length:6}, (_,i) => {
-    const a = Math.PI / 180 * (60 * i - 30);
-    return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`;
+function hexPts(cx,cy,r){
+  return Array.from({length:6},(_,i)=>{
+    const a=Math.PI/180*(60*i-30);
+    return `${cx+r*Math.cos(a)},${cy+r*Math.sin(a)}`;
   }).join(' ');
 }
-
-function renderHexMap() {
-  if (!mapData) return;
-  const svg = document.getElementById('hex-map-svg');
-  const R = 14; // hex radius px
-  const W = R * Math.sqrt(3);
-  const H = R * 2;
-  const PAD = R;
-
-  const GRID = mapData.grid;
-  const totalW = GRID * W + PAD * 2;
-  const totalH = GRID * H * 0.75 + H * 0.25 + PAD * 2;
-
-  svg.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
-
-  const groups = mapData.cells.map(cell => {
-    const cx = PAD + cell.col * W + (cell.row % 2 === 1 ? W/2 : 0) + W/2;
-    const cy = PAD + cell.row * H * 0.75 + H/2;
-
-    const owner = cell.owner ? players[cell.owner] : null;
-    const fill = owner ? owner.color : '#1e1e2e';
-    const isMe = cell.owner === playerId;
-    const isSelected = selectedCells.includes(cell.id);
-    const adjacent = !isMe && capturePoints > 0 && isAdjacentToMe(cell.id);
-
-    const cls = ['hex-cell', isMe ? 'mine' : '', adjacent ? 'capturable' : '', isSelected ? 'selected' : ''].filter(Boolean).join(' ');
-    const stroke = isSelected ? 'var(--gold)' : adjacent ? 'white' : 'rgba(0,0,0,0.3)';
-    const strokeW = isSelected ? 2.5 : adjacent ? 1.5 : 0.5;
-    const opacity = adjacent ? '1' : isMe ? '1' : '0.85';
-
-    return `<g class="${cls}" onclick="toggleCell(${cell.id})" style="opacity:${opacity}">
-      <polygon points="${hexPoints(cx, cy, R-1)}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}"/>
-      ${isMe ? `<circle cx="${cx}" cy="${cy}" r="3" fill="rgba(255,255,255,0.5)"/>` : ''}
-      ${isSelected ? `<circle cx="${cx}" cy="${cy}" r="4" fill="var(--gold)" opacity="0.8"/>` : ''}
+function renderHexMap(){
+  if(!mapData) return;
+  const svg=document.getElementById('player-hex-svg');
+  const R=13,W=R*Math.sqrt(3),PAD=R;
+  const GRID=mapData.grid;
+  const totalW=GRID*W+PAD*2,totalH=GRID*R*2*0.75+R*0.5+PAD*2;
+  svg.setAttribute('viewBox',`0 0 ${totalW} ${totalH}`);
+  svg.innerHTML=mapData.cells.map(cell=>{
+    const cx=PAD+cell.col*W+(cell.row%2===1?W/2:0)+W/2;
+    const cy=PAD+cell.row*R*2*0.75+R;
+    const owner=cell.owner?(mapPlayers[cell.owner]||players[cell.owner]):null;
+    const fill=owner?owner.color:'#1a1a2e';
+    const isMe=cell.owner===playerId;
+    const isSel=selectedCells.includes(cell.id);
+    const adj=!isMe&&capturePoints>0&&isAdjacentToMe(cell.id);
+    const stroke=isSel?'#e9c46a':adj?'white':'rgba(0,0,0,0.3)';
+    const sw=isSel?2.5:adj?1.5:0.5;
+    return `<g onclick="toggleCell(${cell.id})" style="cursor:${adj||isSel?'pointer':'default'}">
+      <polygon points="${hexPts(cx,cy,R-1)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>
+      ${isMe?`<circle cx="${cx}" cy="${cy}" r="3" fill="rgba(255,255,255,0.4)"/>`:
+        isSel?`<circle cx="${cx}" cy="${cy}" r="3.5" fill="#e9c46a"/>`:
+        adj?`<polygon points="${hexPts(cx,cy,R-1)}" fill="white" opacity="0.08"/>`:''
+      }
     </g>`;
   }).join('');
-
-  svg.innerHTML = groups;
 }
-
-function toggleCell(cellId) {
-  if (capturePoints <= 0) return;
-  const cell = mapData.cells.find(c => c.id === cellId);
-  if (!cell || cell.owner === playerId) return;
-  if (!isAdjacentToMe(cellId)) return;
-
-  const idx = selectedCells.indexOf(cellId);
-  if (idx >= 0) {
-    selectedCells.splice(idx, 1);
-  } else {
-    if (selectedCells.length >= capturePoints) return;
-    selectedCells.push(cellId);
-  }
+function toggleCell(cellId){
+  if(capturePoints<=0) return;
+  const cell=mapData.cells.find(c=>c.id===cellId);
+  if(!cell||cell.owner===playerId) return;
+  if(!isAdjacentToMe(cellId)) return;
+  const idx=selectedCells.indexOf(cellId);
+  if(idx>=0) selectedCells.splice(idx,1);
+  else{ if(selectedCells.length>=capturePoints) return; selectedCells.push(cellId); }
   renderHexMap();
-  document.getElementById('btn-capture').disabled = selectedCells.length === 0;
+  document.getElementById('btn-capture').disabled=selectedCells.length===0;
 }
-
-function confirmCapture() {
-  if (selectedCells.length === 0) return;
-  send({ type: 'capture', cellIds: selectedCells });
-  capturePoints -= selectedCells.length;
-  selectedCells = [];
-  document.getElementById('capture-pts').textContent = capturePoints;
-  document.getElementById('btn-capture').disabled = true;
+function confirmCapture(){
+  if(!selectedCells.length) return;
+  send({ type:'capture', cellIds:selectedCells });
+  capturePoints-=selectedCells.length;
+  selectedCells=[];
+  document.getElementById('capture-pts').textContent=capturePoints;
+  document.getElementById('btn-capture').disabled=true;
 }
 
 // ── SCREENS ───────────────────────────────────────────────────────────────────
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-join').style.display = 'none';
-  const target = document.getElementById(id);
-  if (target) target.classList.add('active');
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-join').style.display='none';
+  const t=document.getElementById(id);
+  if(t) t.classList.add('active');
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
 connect();
 </script>
 </body>

@@ -3,864 +3,658 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FallacyMania — Ведучий</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<title>FallacyMania — Хост</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Unbounded:wght@400;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0a0a0f;
-    --surface: #13131a;
-    --border: #1e1e2e;
-    --accent: #ff3c5f;
-    --gold: #ffd166;
-    --teal: #06d6a0;
-    --blue: #118ab2;
-    --text: #e8e8f0;
-    --muted: #6b6b80;
-  }
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0f;--surface:#13131a;--card:#16161f;--border:#1e1e2e;
+  --text:#e8e8f0;--muted:#5a5a70;
+  --red:#e63946;--teal:#2a9d8f;--gold:#e9c46a;--blue:#457b9d;
+}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;
+  height:100vh;overflow:hidden;display:flex;flex-direction:column}
+.screen{display:none;flex:1;flex-direction:column;overflow:hidden}
+.screen.active{display:flex}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+/* LOBBY */
+#screen-lobby{padding:2rem;gap:1.5rem}
+.lobby-top{display:flex;align-items:flex-start;justify-content:space-between;gap:2rem}
+.game-title{font-family:'Bebas Neue',sans-serif;font-size:4rem;line-height:1;
+  background:linear-gradient(135deg,#ff3c5f,#ffd166,#06d6a0);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.game-sub{font-size:.7rem;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-top:.25rem}
+.code-block{text-align:right}
+.code-label{font-size:.65rem;letter-spacing:.2em;color:var(--muted);text-transform:uppercase}
+.code-val{font-family:'Bebas Neue',sans-serif;font-size:4.5rem;color:var(--gold);letter-spacing:.2em;line-height:1}
+.code-url{font-size:.75rem;color:var(--muted);margin-top:.25rem}
+.code-url span{color:var(--teal)}
+.players-row{display:flex;gap:.75rem;flex-wrap:wrap}
+.p-chip{display:flex;align-items:center;gap:.6rem;background:var(--surface);
+  border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem}
+.p-dot{width:10px;height:10px;border-radius:50%}
+.p-name{font-weight:600;font-size:.85rem}
+.p-civ{font-size:.7rem;color:var(--muted);margin-top:.1rem}
+.btn-start{background:var(--red);color:#fff;border:none;padding:1rem 3rem;
+  font-family:'Unbounded',sans-serif;font-size:.9rem;font-weight:700;
+  border-radius:10px;cursor:pointer;margin-top:auto;transition:opacity .2s;align-self:flex-start}
+.btn-start:hover{opacity:.85}
+.btn-start:disabled{opacity:.3;cursor:default}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+/* IN-GAME LAYOUT */
+#screen-game{flex-direction:column}
+.top-bar{display:flex;align-items:center;gap:1rem;padding:.75rem 1.5rem;
+  border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface)}
+.round-pill{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--gold);
+  background:var(--bg);border:1px solid var(--border);padding:.15rem .75rem;border-radius:6px}
+.phase-label{font-family:'Unbounded',sans-serif;font-size:.65rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted)}
+.timer-wrap{margin-left:auto;display:flex;align-items:center;gap:.6rem}
+.timer-num{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;color:var(--gold);width:3rem;text-align:right}
+.timer-track{width:120px;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.timer-fill{height:100%;background:var(--gold);transition:width .5s linear;border-radius:2px}
+.btn-next{background:transparent;color:var(--muted);border:1px solid var(--border);
+  padding:.5rem 1.2rem;font-family:'Unbounded',sans-serif;font-size:.65rem;font-weight:700;
+  border-radius:8px;cursor:pointer;transition:all .2s;letter-spacing:.05em}
+.btn-next:hover{border-color:var(--gold);color:var(--gold)}
 
-  /* ── NOISE TEXTURE ── */
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events: none; z-index: 9999;
-  }
+.scores-row{display:flex;gap:.5rem;padding:.6rem 1.5rem;flex-shrink:0;
+  background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.s-chip{display:flex;align-items:center;gap:.5rem;background:var(--surface);
+  border:1px solid var(--border);border-radius:8px;padding:.3rem .65rem;font-size:.75rem;min-width:110px}
+.s-score{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;margin-left:auto}
 
-  /* ── LOBBY ── */
-  #screen-lobby {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    gap: 2rem;
-    padding: 2rem;
-  }
+.main-area{display:flex;flex:1;gap:1.25rem;padding:1.25rem 1.5rem;overflow:hidden;min-height:0}
+.left-panel{display:flex;flex-direction:column;flex:1;gap:1rem;overflow:hidden;min-height:0}
+.right-panel{width:320px;flex-shrink:0;display:flex;flex-direction:column;gap:.75rem;overflow-y:auto}
 
-  .logo {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(4rem, 10vw, 9rem);
-    letter-spacing: 0.05em;
-    background: linear-gradient(135deg, #ff3c5f, #ffd166, #06d6a0);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    line-height: 1;
-  }
+/* CARDS */
+.card-block{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:1.25rem;display:flex;flex-direction:column;gap:.75rem}
+.block-label{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--muted);font-weight:600;margin-bottom:-.25rem}
+.block-title{font-family:'Unbounded',sans-serif;font-size:1rem;font-weight:900;line-height:1.3}
+.civ-badge{display:inline-flex;align-items:center;gap:.4rem;background:var(--bg);
+  border:1px solid var(--border);border-radius:6px;padding:.2rem .6rem;font-size:.75rem;color:var(--muted)}
 
-  .room-code-display {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-  }
+.fact-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1rem}
+.fact-title{font-family:'Unbounded',sans-serif;font-size:.8rem;font-weight:700;color:var(--gold);margin-bottom:.5rem}
+.fact-body{font-size:.75rem;color:var(--muted);line-height:1.65}
+.fact-angle-atk{font-size:.73rem;color:var(--red);border-left:2px solid var(--red);
+  padding-left:.65rem;margin-top:.6rem;font-style:italic;line-height:1.5}
+.fact-angle-def{font-size:.73rem;color:var(--teal);border-left:2px solid var(--teal);
+  padding-left:.65rem;margin-top:.5rem;font-style:italic;line-height:1.5}
 
-  .room-code-label {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 0.75rem;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
+.fallacy-pill{display:inline-flex;align-items:center;gap:.5rem;
+  border:1px solid;border-radius:8px;padding:.35rem .75rem;font-size:.75rem;font-weight:600;
+  border-color:var(--red);color:var(--red);background:#e6394611;align-self:flex-start}
 
-  .room-code {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(5rem, 15vw, 12rem);
-    letter-spacing: 0.2em;
-    color: var(--gold);
-    text-shadow: 0 0 60px rgba(255,209,102,0.4);
-  }
+/* CIV SELECT */
+.civ-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;flex:1;align-content:start}
+.civ-card{background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:.9rem;text-align:center}
+.civ-card.taken{border-color:var(--teal)}
+.civ-em{font-size:2.2rem;display:block;margin-bottom:.4rem}
+.civ-nm{font-family:'Unbounded',sans-serif;font-size:.65rem;font-weight:700;line-height:1.3}
+.civ-era{font-size:.6rem;color:var(--muted);margin-top:.2rem}
+.civ-who{font-size:.6rem;color:var(--teal);margin-top:.3rem;font-weight:600}
 
-  .join-url {
-    font-family: 'Inter', sans-serif;
-    font-size: 1.1rem;
-    color: var(--muted);
-    background: var(--surface);
-    padding: 0.75rem 2rem;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-  }
+/* ATTACK ORDER LIST (right panel) */
+.order-list{display:flex;flex-direction:column;gap:.4rem}
+.order-item{display:flex;align-items:center;gap:.6rem;padding:.4rem .65rem;
+  background:var(--bg);border-radius:7px;font-size:.75rem;opacity:.5}
+.order-item.current{background:var(--surface);border:1px solid var(--red);opacity:1;font-weight:600}
+.order-item.done{opacity:.3;text-decoration:line-through}
+.order-idx{font-family:'Bebas Neue',sans-serif;font-size:1rem;color:var(--muted);width:1.2rem}
 
-  .join-url span { color: var(--teal); }
+/* DEFENSE WAITING */
+.big-center{flex:1;display:flex;align-items:center;justify-content:center;
+  font-family:'Unbounded',sans-serif;font-size:1rem;color:var(--muted);text-align:center;flex-direction:column;gap:.75rem}
+.big-icon{font-size:4rem}
 
-  .players-lobby {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    justify-content: center;
-    max-width: 800px;
-  }
+/* CANCEL VOTE */
+.cancel-center{text-align:center;padding:1.5rem 0}
+.cancel-count{font-family:'Bebas Neue',sans-serif;font-size:4rem;color:var(--red)}
+.cancel-bars{display:flex;gap:.75rem;margin-top:.75rem;justify-content:center}
+.vote-bar{padding:.5rem 1.5rem;border-radius:8px;font-weight:700;font-size:.85rem;border:2px solid}
+.vote-bar.red{border-color:var(--red);color:var(--red);background:#e6394622}
+.vote-bar.green{border-color:var(--teal);color:var(--teal);background:#2a9d8f22}
 
-  .player-chip {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 100px;
-    padding: 0.6rem 1.2rem;
-    font-family: 'Unbounded', sans-serif;
-    font-size: 0.85rem;
-    animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
+/* RATING */
+.speeches-list{display:flex;flex-direction:column;gap:.5rem;overflow-y:auto;flex:1}
+.speech-row{display:flex;align-items:center;gap:.75rem;background:var(--surface);
+  border:1px solid var(--border);border-radius:10px;padding:.65rem .9rem}
+.speech-role{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;
+  padding:.15rem .45rem;border-radius:4px;font-weight:700}
+.speech-role.atk{background:#e6394622;color:var(--red)}
+.speech-role.def{background:#2a9d8f22;color:var(--teal)}
+.rating-bar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem}
+.rating-chip{padding:.3rem .7rem;border-radius:6px;font-size:.75rem;background:var(--border)}
+.rating-chip.gold{background:#e9c46a33;color:var(--gold);border:1px solid var(--gold)}
+.rating-chip.silver{background:#aaa3;color:#ccc}
 
-  @keyframes popIn {
-    from { transform: scale(0.5); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-  }
+/* MAP */
+#host-hex-svg{width:100%;height:100%;display:block}
+.map-legend{display:flex;flex-direction:column;gap:.5rem}
+.leg-item{display:flex;align-items:center;gap:.5rem;font-size:.75rem}
+.leg-dot{width:11px;height:11px;border-radius:50%}
 
-  .player-dot {
-    width: 12px; height: 12px;
-    border-radius: 50%;
-  }
+/* ROUND END */
+.podium{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;flex:1;align-content:start}
+.podium-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:1rem;display:flex;align-items:center;gap:.9rem}
+.podium-rank{font-family:'Bebas Neue',sans-serif;font-size:2.5rem;color:var(--muted);width:2.5rem;text-align:center}
+.podium-pts{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;margin-left:auto}
 
-  .btn-start {
-    background: var(--accent);
-    color: white;
-    border: none;
-    font-family: 'Unbounded', sans-serif;
-    font-size: 1rem;
-    font-weight: 700;
-    padding: 1rem 3rem;
-    border-radius: 8px;
-    cursor: pointer;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    transition: all 0.2s;
-    box-shadow: 0 0 30px rgba(255, 60, 95, 0.4);
-  }
-
-  .btn-start:hover { transform: translateY(-2px); box-shadow: 0 0 50px rgba(255, 60, 95, 0.6); }
-  .btn-start:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-  /* ── PHASE SCREENS ── */
-  .screen { display: none; padding: 2rem; min-height: 100vh; }
-  .screen.active { display: flex; flex-direction: column; }
-
-  .phase-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .phase-label {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 0.7rem;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  .phase-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 3rem;
-    letter-spacing: 0.05em;
-    color: var(--gold);
-  }
-
-  .round-badge {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.5rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 0.4rem 1.2rem;
-    border-radius: 6px;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-  }
-
-  /* ── TIMER BAR ── */
-  .timer-bar-wrap {
-    height: 4px;
-    background: var(--border);
-    border-radius: 4px;
-    margin-bottom: 2rem;
-    overflow: hidden;
-  }
-  .timer-bar {
-    height: 100%;
-    background: linear-gradient(90deg, var(--teal), var(--accent));
-    transition: width 1s linear;
-    border-radius: 4px;
-  }
-
-  /* ── TOPIC SELECT PHASE ── */
-  .topics-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-    flex: 1;
-    align-content: center;
-  }
-
-  .topic-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 2rem;
-    text-align: center;
-    font-family: 'Unbounded', sans-serif;
-    font-size: 1.1rem;
-    font-weight: 700;
-    line-height: 1.4;
-    position: relative;
-  }
-
-  .topic-card .topic-num {
-    position: absolute;
-    top: 1rem; left: 1rem;
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2rem;
-    color: var(--accent);
-  }
-
-  /* ── SPEECH PHASE ── */
-  .speech-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    flex: 1;
-  }
-
-  .player-speech-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.5rem;
-  }
-
-  .player-speech-name {
-    font-family: 'Unbounded', sans-serif;
-    font-weight: 700;
-    font-size: 1rem;
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .player-speech-topic {
-    font-size: 0.9rem;
-    color: var(--muted);
-    font-style: italic;
-  }
-
-  .btn-next {
-    align-self: flex-end;
-    background: var(--surface);
-    color: var(--text);
-    border: 1px solid var(--border);
-    font-family: 'Unbounded', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 700;
-    padding: 0.75rem 2rem;
-    border-radius: 8px;
-    cursor: pointer;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    transition: all 0.2s;
-    margin-top: 1rem;
-  }
-  .btn-next:hover { background: var(--accent); border-color: var(--accent); }
-
-  /* ── VOTE PHASE ── */
-  .vote-layout {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.5rem;
-    flex: 1;
-    justify-content: center;
-  }
-
-  .vote-status {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 1rem;
-    color: var(--muted);
-  }
-
-  .vote-bars {
-    display: flex;
-    gap: 1.5rem;
-    align-items: flex-end;
-    height: 200px;
-  }
-
-  .vote-bar-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    width: 80px;
-  }
-
-  .vote-bar-fill {
-    width: 60px;
-    background: var(--accent);
-    border-radius: 6px 6px 0 0;
-    transition: height 0.5s ease;
-    min-height: 4px;
-  }
-
-  .vote-bar-name {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 0.65rem;
-    text-align: center;
-    color: var(--muted);
-  }
-
-  .vote-count {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.5rem;
-  }
-
-  /* ── MAP PHASE ── */
-  #screen-map {
-    display: none;
-    flex-direction: row;
-    gap: 2rem;
-  }
-  #screen-map.active { display: flex; }
-
-  .map-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-
-  #host-hex-svg {
-    width: 100%;
-    height: 100%;
-    max-height: calc(100vh - 280px);
-    display: block;
-  }
-
-  .hex-capture-flash { animation: hexFlash 0.5s ease; }
-  @keyframes hexFlash {
-    0% { opacity: 1; }
-    50% { opacity: 0.4; filter: brightness(2); }
-    100% { opacity: 1; }
-  }
-
-  .scores-sidebar {
-    width: 260px;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .score-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1rem 1.2rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .score-card-dot {
-    width: 16px; height: 16px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .score-card-info { flex: 1; }
-
-  .score-card-name {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 0.8rem;
-    font-weight: 700;
-  }
-
-  .score-card-pts {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.5rem;
-    color: var(--gold);
-    letter-spacing: 0.05em;
-  }
-
-  .score-card-territories {
-    font-size: 0.7rem;
-    color: var(--muted);
-    font-family: 'Inter', sans-serif;
-  }
-
-  /* ── RESULTS ── */
-  #screen-round-end { justify-content: center; align-items: center; gap: 2rem; }
-
-  .results-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 4rem;
-    color: var(--gold);
-    text-align: center;
-  }
-
-  .results-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    width: 500px;
-  }
-
-  .result-item {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1rem 1.5rem;
-    animation: slideIn 0.4s ease both;
-  }
-
-  @keyframes slideIn {
-    from { transform: translateX(-30px); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-  }
-
-  .result-rank {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2rem;
-    color: var(--muted);
-    width: 2rem;
-    text-align: center;
-  }
-  .result-rank.first { color: var(--gold); }
-
-  .result-name {
-    flex: 1;
-    font-family: 'Unbounded', sans-serif;
-    font-size: 0.9rem;
-  }
-
-  .result-score {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2rem;
-    color: var(--teal);
-    letter-spacing: 0.05em;
-  }
+/* DEBUG */
+#dbg{position:fixed;bottom:.5rem;left:.5rem;background:#111;color:#aaa;
+  border:1px solid #222;border-radius:6px;padding:.3rem .65rem;font-size:.65rem;
+  font-family:monospace;z-index:9999;max-width:450px}
 </style>
 </head>
 <body>
 
 <!-- LOBBY -->
-<div id="screen-lobby">
-  <div class="logo">FallacyMania</div>
-  <div class="room-code-display">
-    <div class="room-code-label">Код кімнати</div>
-    <div class="room-code" id="room-code">—</div>
-  </div>
-  <div class="join-url">Зайдіть на <span id="join-url-text">...</span> та введіть код</div>
-  <div class="players-lobby" id="players-lobby"></div>
-  <button class="btn-start" id="btn-start" disabled onclick="startGame()">Почати гру</button>
-</div>
-
-<!-- TOPIC SELECT -->
-<div id="screen-topic" class="screen">
-  <div class="phase-header">
+<div id="screen-lobby" class="screen active">
+  <div class="lobby-top">
     <div>
-      <div class="phase-label">Фаза 1</div>
-      <div class="phase-title">Вибір теми</div>
+      <div class="game-title">FallacyMania</div>
+      <div class="game-sub">Цивілізаційна битва · Гра у логічні помилки</div>
     </div>
-    <div class="round-badge" id="round-badge-topic">Раунд 1</div>
+    <div class="code-block">
+      <div class="code-label">Код кімнати</div>
+      <div class="code-val" id="room-code">----</div>
+      <div class="code-url">Зайдіть: <span id="join-url">…</span>/player.html</div>
+    </div>
   </div>
-  <div class="timer-bar-wrap"><div class="timer-bar" id="timer-topic" style="width:100%"></div></div>
-  <div class="topics-grid" id="topics-grid"></div>
+  <div class="players-row" id="lobby-players">
+    <div style="color:var(--muted);font-size:.85rem;padding:.5rem 0">Очікуємо гравців...</div>
+  </div>
+  <button class="btn-start" id="btn-start" onclick="startGame()" disabled>▶ Почати гру</button>
 </div>
 
-<!-- FALLACY DEAL -->
-<div id="screen-fallacy" class="screen">
-  <div class="phase-header">
-    <div>
-      <div class="phase-label">Фаза 2</div>
-      <div class="phase-title">Картки на руках</div>
+<!-- IN-GAME -->
+<div id="screen-game" class="screen">
+  <div class="top-bar">
+    <div class="round-pill">Раунд <span id="round-num">1</span></div>
+    <div class="phase-label" id="phase-label">—</div>
+    <div class="timer-wrap">
+      <div class="timer-track"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+      <div class="timer-num" id="timer-num">—</div>
     </div>
-    <div class="round-badge" id="round-badge-fallacy">Раунд 1</div>
+    <button class="btn-next" onclick="nextPhase()">▶ Пропустити</button>
   </div>
-  <div class="timer-bar-wrap"><div class="timer-bar" id="timer-fallacy" style="width:100%"></div></div>
-  <div style="flex:1; display:flex; flex-direction:column; gap:1rem; overflow-y:auto;">
-    <div style="font-family:'Bebas Neue',sans-serif; font-size:2rem; color:var(--muted); text-align:center; letter-spacing:0.1em;">
-      Спільні картки раунду
-    </div>
-    <div id="shared-fallacy-cards" style="display:grid; grid-template-columns:repeat(5,1fr); gap:1rem;"></div>
-  </div>
-  <button class="btn-next" onclick="nextPhase()">▶ Починаємо промови</button>
-</div>
-
-<!-- SPEECH -->
-<div id="screen-speech" class="screen">
-  <div class="phase-header">
-    <div>
-      <div class="phase-label">Фаза 3</div>
-      <div class="phase-title">Промови</div>
-    </div>
-    <div class="round-badge" id="round-badge-speech">Раунд 1</div>
-  </div>
-  <div class="speech-layout" id="speech-layout"></div>
-  <button class="btn-next" onclick="nextPhase()">▶ Голосування</button>
-</div>
-
-<!-- VOTE -->
-<div id="screen-vote" class="screen">
-  <div class="phase-header">
-    <div>
-      <div class="phase-label">Фаза 4</div>
-      <div class="phase-title">Голосування</div>
-    </div>
-    <div class="round-badge" id="round-badge-vote">Раунд 1</div>
-  </div>
-  <div class="timer-bar-wrap"><div class="timer-bar" id="timer-vote" style="width:100%"></div></div>
-  <div class="vote-layout">
-    <div class="vote-status" id="vote-status">Чекаємо на голоси...</div>
-    <div class="vote-bars" id="vote-bars"></div>
+  <div class="scores-row" id="scores-row"></div>
+  <div class="main-area">
+    <div class="left-panel" id="left-panel"></div>
+    <div class="right-panel" id="right-panel"></div>
   </div>
 </div>
 
-<!-- MAP -->
-<div id="screen-map" class="screen">
-  <div class="map-area">
-    <div class="phase-header">
-      <div>
-        <div class="phase-label">Фаза 5</div>
-        <div class="phase-title">Карта світу</div>
-      </div>
-      <div class="round-badge" id="round-badge-map">Раунд 1</div>
-    </div>
-    <div class="timer-bar-wrap"><div class="timer-bar" id="timer-map" style="width:100%"></div></div>
-    <svg id="host-hex-svg" viewBox="0 0 0 0" xmlns="http://www.w3.org/2000/svg"></svg>
-  </div>
-  <div class="scores-sidebar" id="scores-sidebar"></div>
-</div>
-
-<!-- ROUND END -->
-<div id="screen-round-end" class="screen">
-  <div class="results-title" id="results-title">Раунд завершено!</div>
-  <div class="results-list" id="results-list"></div>
-  <button class="btn-next" onclick="nextPhase()">▶ Наступний раунд</button>
-</div>
+<div id="dbg">🟡 Підключення...</div>
 
 <script>
-const WS_URL = location.protocol === 'https:'
+const WS_URL = location.protocol==='https:'
   ? `wss://${location.host}/ws`
   : `ws://${location.host}/ws`;
 
-let ws, roomCode, players = {}, map = null, timerInterval = null;
+let ws, roomCode;
+let players = {};
+let round = 0;
+let timerInterval, timerEnd = 0, timerTotal = 1;
+let currentSpeeches = [];
+let attackOrder = [], currentAttackerIdx = 0;
+let cancelData = { cancel:0, ok:0, total:0 };
+let ratingData = { submitted:0, total:0 };
 
-// ── CONNECT ──────────────────────────────────────────────────────────────────
-function setStatus(msg, color) {
-  let el = document.getElementById("debug-status");
-  if (!el) {
-    el = document.createElement("div");
-    el.id = "debug-status";
-    el.style.cssText = "position:fixed;bottom:1rem;left:1rem;background:#111;color:#fff;padding:.5rem 1rem;border-radius:8px;font-size:.8rem;font-family:monospace;z-index:9999;border:1px solid #333;max-width:600px;word-break:break-all";
-    document.body.appendChild(el);
-  }
-  el.style.borderColor = color || "#333";
+function dbg(msg, color) {
+  const el = document.getElementById('dbg');
   el.textContent = msg;
+  el.style.borderColor = color || '#333';
 }
 
+// ── CONNECT ──
 function connect() {
-  setStatus("Підключення до " + WS_URL + "...", "#ffd166");
+  dbg('🟡 Підключення...', '#e9c46a');
   ws = new WebSocket(WS_URL);
-  ws.onopen = () => {
-    setStatus("✓ WebSocket підключено", "#06d6a0");
-    ws.send(JSON.stringify({ type: "create_room" }));
-  };
-  ws.onmessage = e => {
-    try { handle(JSON.parse(e.data)); }
-    catch(err) { setStatus("Помилка парсингу: " + err.message, "#ff3c5f"); }
-  };
-  ws.onerror = () => setStatus("✗ WebSocket помилка — перевір консоль F12", "#ff3c5f");
-  ws.onclose = (e) => {
-    setStatus("✗ З'єднання закрито (код " + e.code + "). Перепідключення...", "#ff3c5f");
-    setTimeout(connect, 3000);
-  };
+  ws.onopen = () => { dbg('🟢 Підключено', '#06d6a0'); ws.send(JSON.stringify({type:'create_room'})); };
+  ws.onmessage = e => { try{ handle(JSON.parse(e.data)); }catch(err){ console.error(err); } };
+  ws.onerror = () => dbg('🔴 WebSocket помилка', '#e63946');
+  ws.onclose = e => { dbg(`🔴 Закрито (${e.code}). Перепідключення...`, '#e63946'); setTimeout(connect, 3000); };
 }
 
-// ── HANDLE MESSAGES ───────────────────────────────────────────────────────────
 function handle(msg) {
   switch(msg.type) {
     case 'room_created':
       roomCode = msg.code;
       document.getElementById('room-code').textContent = msg.code;
-      document.getElementById('join-url-text').textContent = `${location.host}/player.html`;
+      document.getElementById('join-url').textContent = location.host;
+      dbg(`🟢 Кімната ${msg.code} створена`, '#06d6a0');
       break;
 
-    case 'player_joined':
-    case 'player_left':
+    case 'player_joined': case 'player_left': case 'civ_update':
+      updatePlayers(msg.players); break;
+
+    case 'timer':
+      startTimerUI(msg.timerEnd, msg.seconds); break;
+
+    case 'round_start':
+      round = msg.round;
+      document.getElementById('round-num').textContent = round;
+      attackOrder = msg.attackOrder || [];
+      currentAttackerIdx = 0;
       updatePlayers(msg.players);
       break;
 
     case 'phase':
+      if (msg.players) updatePlayers(msg.players);
+      round = msg.round || round;
+      document.getElementById('round-num').textContent = round;
       handlePhase(msg);
       break;
 
-    case 'timer':
-      startTimerBar(msg.timerEnd);
-      break;
+    case 'defense_result':
+      showDefenseResult(msg); break;
 
-    case 'vote_result':
-      showVoteResult(msg);
-      break;
+    case 'cancel_vote_update':
+      cancelData = { cancel: msg.votes, total: msg.total };
+      updateCancelDisplay(); break;
 
-    case 'shared_fallacies':
-      renderSharedFallacies(msg.cards);
-      break;
+    case 'cancel_result':
+      showCancelResult(msg); break;
+
+    case 'rating_update':
+      ratingData = { submitted: msg.submitted, total: msg.total };
+      updateRatingProgress(); break;
+
+    case 'rating_result':
+      updatePlayers(msg.players); break;
 
     case 'map_update':
-      map = msg.map;
-      renderMap();
+      if (window._map) { window._map = msg.map; renderMap(msg.map); }
       break;
-  }
-}
-
-function updatePlayers(list) {
-  players = {};
-  list.forEach(p => players[p.id] = p);
-  renderLobbyPlayers(list);
-  document.getElementById('btn-start').disabled = list.length < 2;
-}
-
-function renderLobbyPlayers(list) {
-  const el = document.getElementById('players-lobby');
-  el.innerHTML = list.map(p => `
-    <div class="player-chip">
-      <div class="player-dot" style="background:${p.color}"></div>
-      ${p.name}
-    </div>
-  `).join('');
-}
-
-// ── PHASE HANDLING ────────────────────────────────────────────────────────────
-function showScreen(id) {
-  document.querySelectorAll('.screen, #screen-lobby').forEach(el => {
-    el.classList.remove('active');
-    if (el.id !== 'screen-lobby') el.style.display = 'none';
-    else el.style.display = 'none';
-  });
-  const target = document.getElementById(id);
-  if (target) {
-    target.style.display = 'flex';
-    target.classList.add('active');
   }
 }
 
 function handlePhase(msg) {
-  const round = msg.round || 1;
-
-  if (msg.phase === 'topic_select') {
-    showScreen('screen-topic');
-    document.getElementById('round-badge-topic').textContent = `Раунд ${round}`;
-    renderTopics(msg.topics || []);
-  }
-  if (msg.phase === 'fallacy_deal') {
-    showScreen('screen-fallacy');
-    document.getElementById('round-badge-fallacy').textContent = `Раунд ${round}`;
-  }
-  if (msg.phase === 'speech') {
-    showScreen('screen-speech');
-    document.getElementById('round-badge-speech').textContent = `Раунд ${round}`;
-    renderSpeeches(msg.playerTopics || {});
-  }
-  if (msg.phase === 'vote') {
-    showScreen('screen-vote');
-    document.getElementById('round-badge-vote').textContent = `Раунд ${round}`;
-    renderVoteBars();
-  }
-  if (msg.phase === 'map') {
-    showScreen('screen-map');
-    document.getElementById('round-badge-map').textContent = `Раунд ${round}`;
-    if (msg.map) map = msg.map;
-    renderMap();
-    renderScoresSidebar(msg.players || [], msg.roundScores || {});
-  }
-  if (msg.phase === 'round_end') {
-    showScreen('screen-round-end');
-    renderRoundEnd(msg.players || []);
-    if (msg.map) { map = msg.map; }
+  showScreen('screen-game');
+  switch(msg.phase) {
+    case 'civ_select':
+      document.getElementById('phase-label').textContent = 'Вибір цивілізації';
+      renderCivSelect(msg.civilizations); break;
+    case 'attack_prep':
+      currentAttackerIdx = (attackOrder.indexOf(msg.attackerId));
+      document.getElementById('phase-label').textContent = `⚔️ Атака ${msg.attackIndex||''}/${msg.attackTotal||''}`;
+      renderAttackPrep(msg); break;
+    case 'defense':
+      document.getElementById('phase-label').textContent = '🛡️ Захист';
+      renderDefensePhase(msg); break;
+    case 'cancel_vote':
+      document.getElementById('phase-label').textContent = '🚫 Голосування Cancel';
+      cancelData = { cancel:0, ok:0, total: Object.keys(players).length - 1 };
+      renderCancelVote(msg); break;
+    case 'rating':
+      document.getElementById('phase-label').textContent = '⭐ Рейтинг';
+      currentSpeeches = msg.speeches || [];
+      ratingData = { submitted:0, total: Object.keys(players).length };
+      renderRating(msg); break;
+    case 'map':
+      document.getElementById('phase-label').textContent = '🗺️ Захват';
+      window._map = msg.map;
+      renderMapPhase(msg); break;
+    case 'round_end':
+      document.getElementById('phase-label').textContent = '📊 Підсумки';
+      renderRoundEnd(msg); break;
   }
 }
 
-// ── RENDER TOPICS ─────────────────────────────────────────────────────────────
-function renderTopics(topics) {
-  const grid = document.getElementById('topics-grid');
-  grid.innerHTML = topics.map((t, i) => `
-    <div class="topic-card">
-      <div class="topic-num">${i + 1}</div>
-      ${t}
-    </div>
-  `).join('');
-}
+// ── PLAYERS ──
+function updatePlayers(list) {
+  if (!list) return;
+  players = {};
+  list.forEach(p => players[p.id] = p);
 
-// ── RENDER SPEECHES ───────────────────────────────────────────────────────────
-function renderSpeeches(playerTopics) {
-  const layout = document.getElementById('speech-layout');
-  layout.innerHTML = Object.entries(playerTopics).map(([pid, topic]) => {
-    const p = players[pid];
-    if (!p) return '';
-    return `
-      <div class="player-speech-card">
-        <div class="player-speech-name">
-          <div class="player-dot" style="background:${p.color}"></div>
-          ${p.name}
+  // Lobby
+  const lobby = document.getElementById('lobby-players');
+  if (lobby) {
+    lobby.innerHTML = list.length === 0
+      ? '<div style="color:var(--muted);font-size:.85rem">Очікуємо гравців...</div>'
+      : list.map(p => `
+          <div class="p-chip">
+            <div class="p-dot" style="background:${p.color}"></div>
+            <div>
+              <div class="p-name">${p.civEmoji||'👤'} ${p.name}</div>
+              <div class="p-civ">${p.civName||'обирає...'}</div>
+            </div>
+          </div>`).join('');
+  }
+  const btn = document.getElementById('btn-start');
+  if (btn) btn.disabled = list.length < 2;
+
+  // Scores row
+  const sr = document.getElementById('scores-row');
+  if (sr) {
+    sr.innerHTML = list.map(p => `
+      <div class="s-chip">
+        <span style="font-size:.9rem">${p.civEmoji||'👤'}</span>
+        <div>
+          <div style="font-size:.7rem;font-weight:600">${p.name}</div>
+          <div style="font-size:.6rem;color:var(--muted)">${p.civName||''}</div>
         </div>
-        <div class="player-speech-topic">"${topic}"</div>
-      </div>
-    `;
+        <div class="s-score" style="color:${p.color}">${p.score||0}</div>
+      </div>`).join('');
+  }
+
+  // Attack order sidebar refresh
+  refreshOrderPanel();
+}
+
+// ── TIMER ──
+function startTimerUI(end, total) {
+  clearInterval(timerInterval);
+  timerEnd = end; timerTotal = total || 60;
+  timerInterval = setInterval(() => {
+    const left = Math.max(0, Math.ceil((timerEnd - Date.now()) / 1000));
+    document.getElementById('timer-num').textContent = left;
+    const pct = (left / timerTotal) * 100;
+    const fill = document.getElementById('timer-fill');
+    fill.style.width = pct + '%';
+    fill.style.background = left < 10 ? 'var(--red)' : 'var(--gold)';
+    if (left === 0) clearInterval(timerInterval);
+  }, 400);
+}
+
+// ── RENDER ──
+
+function renderCivSelect(civs) {
+  const lp = document.getElementById('left-panel');
+  lp.innerHTML = `<div class="civ-grid" id="civ-grid"></div>`;
+  updateCivGrid(civs);
+  document.getElementById('right-panel').innerHTML = `
+    <div class="card-block">
+      <div class="block-label">Гравці</div>
+      <div id="civ-players-list" style="display:flex;flex-direction:column;gap:.4rem"></div>
+    </div>`;
+  updateCivPlayersList();
+}
+
+function updateCivGrid(civs) {
+  const grid = document.getElementById('civ-grid');
+  if (!grid || !civs) return;
+  grid.innerHTML = civs.map(c => {
+    const who = Object.values(players).find(p => p.civId === c.id);
+    return `<div class="civ-card ${who?'taken':''}">
+      <span class="civ-em">${c.emoji}</span>
+      <div class="civ-nm">${c.name}</div>
+      <div class="civ-era">${c.era}</div>
+      ${who ? `<div class="civ-who">✓ ${who.name}</div>` : ''}
+    </div>`;
   }).join('');
 }
 
-// ── RENDER VOTE BARS ──────────────────────────────────────────────────────────
-let currentVoteTally = {};
-function renderVoteBars(tally = {}) {
-  currentVoteTally = tally;
-  const maxV = Math.max(1, ...Object.values(tally));
-  const el = document.getElementById('vote-bars');
-  el.innerHTML = Object.values(players).map(p => {
-    const v = tally[p.id] || 0;
-    const h = Math.max(4, (v / maxV) * 160);
-    return `
-      <div class="vote-bar-item">
-        <div class="vote-count" style="color:${p.color}">${v}</div>
-        <div class="vote-bar-fill" style="height:${h}px; background:${p.color}"></div>
-        <div class="vote-bar-name">${p.name}</div>
+function updateCivPlayersList() {
+  const el = document.getElementById('civ-players-list');
+  if (!el) return;
+  el.innerHTML = Object.values(players).map(p => `
+    <div style="display:flex;align-items:center;gap:.5rem;font-size:.8rem">
+      <div style="width:8px;height:8px;border-radius:50%;background:${p.color}"></div>
+      <span>${p.name}</span>
+      <span style="margin-left:auto;color:${p.civId?'var(--teal)':'var(--muted)'}">${p.civEmoji||'⏳'} ${p.civName||'обирає...'}</span>
+    </div>`).join('');
+}
+
+function renderAttackPrep(msg) {
+  const attacker = players[msg.attackerId];
+  const lp = document.getElementById('left-panel');
+  lp.innerHTML = `
+    <div class="card-block">
+      <div class="block-label">⚔️ Атакуючий</div>
+      <div style="display:flex;align-items:center;gap:1rem;margin-top:.25rem">
+        <span style="font-size:3rem">${attacker?.civEmoji||'⚔️'}</span>
+        <div>
+          <div class="block-title">${attacker?.name||'?'}</div>
+          <div class="civ-badge">${attacker?.civName||''}</div>
+        </div>
       </div>
-    `;
-  }).join('');
+    </div>
+    <div class="big-center" style="flex:1">
+      <div class="big-icon">⏳</div>
+      <div>Гравець обирає ціль і аргументи</div>
+      <div style="font-size:.8rem;color:var(--muted)">потім виступить вголос</div>
+    </div>`;
+  refreshOrderPanel();
 }
 
-function showVoteResult(msg) {
-  renderVoteBars(msg.tally || {});
+function refreshOrderPanel() {
+  const rp = document.getElementById('right-panel');
+  if (!rp || !attackOrder.length) return;
+  rp.innerHTML = `
+    <div class="card-block">
+      <div class="block-label">Порядок атак</div>
+      <div class="order-list" style="margin-top:.25rem">
+        ${attackOrder.map((pid, i) => {
+          const p = players[pid];
+          const cls = i < currentAttackerIdx ? 'done' : i === currentAttackerIdx ? 'current' : '';
+          return `<div class="order-item ${cls}">
+            <div class="order-idx">${i+1}</div>
+            <span>${p?.civEmoji||'👤'}</span>
+            <span>${p?.name||pid}</span>
+            ${i === currentAttackerIdx ? '<span style="margin-left:auto;color:var(--red);font-size:.7rem">▶ зараз</span>' : ''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
 }
 
-// ── RENDER MAP ────────────────────────────────────────────────────────────────
-function hexPoints(cx, cy, r) {
-  return Array.from({length:6}, (_,i) => {
-    const a = Math.PI/180 * (60*i - 30);
-    return `${cx + r*Math.cos(a)},${cy + r*Math.sin(a)}`;
+function renderDefensePhase(msg) {
+  const attacker = players[msg.attackerId];
+  const defender = players[msg.defenderId];
+  const lp = document.getElementById('left-panel');
+
+  lp.innerHTML = `
+    <div class="card-block">
+      <div style="display:flex;gap:1rem;align-items:flex-start">
+        <div style="flex:1">
+          <div class="block-label">⚔️ Атака</div>
+          <div style="display:flex;align-items:center;gap:.75rem;margin:.3rem 0">
+            <span style="font-size:2rem">${attacker?.civEmoji||'⚔️'}</span>
+            <div>
+              <div style="font-weight:700">${attacker?.name||'?'}</div>
+              <div class="civ-badge">${attacker?.civName||''}</div>
+            </div>
+          </div>
+          ${msg.usedFallacy ? `<div class="fallacy-pill">🃏 ${msg.usedFallacy.name}</div>` : ''}
+        </div>
+        <div style="font-size:2rem;align-self:center">→</div>
+        <div style="flex:1">
+          <div class="block-label" style="color:var(--teal)">🛡️ Захист</div>
+          <div style="display:flex;align-items:center;gap:.75rem;margin:.3rem 0">
+            <span style="font-size:2rem">${defender?.civEmoji||'🛡️'}</span>
+            <div>
+              <div style="font-weight:700" id="def-name">${defender?.name||'?'}</div>
+              <div class="civ-badge">${defender?.civName||''}</div>
+            </div>
+          </div>
+          <div id="def-status" style="font-size:.8rem;color:var(--muted)">Очікуємо рішення...</div>
+        </div>
+      </div>
+    </div>
+    ${msg.fact ? `
+      <div class="fact-box" style="flex:1;overflow-y:auto">
+        <div class="fact-title">📜 ${msg.fact.title}</div>
+        <div class="fact-body">${msg.fact.body}</div>
+        <div class="fact-angle-atk">${msg.fact.attacker_angle}</div>
+      </div>` : ''}`;
+
+  refreshOrderPanel();
+}
+
+function showDefenseResult(msg) {
+  const el = document.getElementById('def-status');
+  if (!el) return;
+  if (msg.choice === 'silence') {
+    el.innerHTML = '<span style="color:var(--muted)">🤐 Промовчав (-1 бал)</span>';
+  } else {
+    el.innerHTML = '<span style="color:var(--teal)">🗣️ Захищається! → Голосування...</span>';
+  }
+}
+
+function renderCancelVote(msg) {
+  const defender = players[msg.defenderId];
+  const lp = document.getElementById('left-panel');
+  lp.innerHTML = `
+    <div class="card-block" style="flex:1;align-items:center;justify-content:center">
+      <div class="cancel-center">
+        <div style="font-size:3.5rem">${defender?.civEmoji||'🛡️'}</div>
+        <div style="font-family:'Unbounded',sans-serif;font-size:1.2rem;margin:.5rem 0">
+          ${defender?.name||'?'} — ${defender?.civName||''}
+        </div>
+        <div style="font-size:.85rem;color:var(--muted)">Чи переконливий захист?</div>
+        <div class="cancel-count" id="cancel-count">?</div>
+        <div style="font-size:.8rem;color:var(--muted)">Cancel голосів / <span id="cancel-total">${cancelData.total}</span></div>
+        <div id="cancel-result-msg" style="margin-top:1rem;font-family:'Unbounded',sans-serif;font-size:.9rem"></div>
+      </div>
+    </div>`;
+  document.getElementById('right-panel').innerHTML = `
+    <div class="card-block">
+      <div class="block-label">Голосування гравців</div>
+      <div id="cancel-votes-list" style="display:flex;flex-direction:column;gap:.3rem;margin-top:.25rem"></div>
+    </div>`;
+}
+
+function updateCancelDisplay() {
+  const el = document.getElementById('cancel-count');
+  if (el) el.textContent = cancelData.cancel;
+  const vl = document.getElementById('cancel-votes-list');
+  if (vl) {
+    vl.innerHTML = `
+      <div class="vote-bar red">🚫 Cancel: ${cancelData.cancel}</div>
+      <div class="vote-bar green">✅ OK: ${cancelData.total - cancelData.cancel}</div>`;
+  }
+}
+
+function showCancelResult(msg) {
+  const el = document.getElementById('cancel-result-msg');
+  if (el) {
+    el.style.color = msg.cancelled ? 'var(--red)' : 'var(--teal)';
+    el.textContent = msg.cancelled
+      ? `✗ CANCELLED — ${msg.cancelCount}/${msg.totalVoters} голосів (-4)`
+      : `✓ ПРИЙНЯТО — ${msg.cancelCount}/${msg.totalVoters} cancel (+3)`;
+  }
+  if (document.getElementById('cancel-count'))
+    document.getElementById('cancel-count').textContent = msg.cancelCount;
+}
+
+function renderRating(msg) {
+  const lp = document.getElementById('left-panel');
+  lp.innerHTML = `
+    <div class="card-block" style="flex:1;overflow:hidden;display:flex;flex-direction:column;gap:.75rem">
+      <div class="block-label">⭐ Виступи раунду — гравці голосують</div>
+      <div class="speeches-list">
+        ${(msg.speeches||[]).map(s => `
+          <div class="speech-row">
+            <span style="font-size:1.2rem">${s.civEmoji||'👤'}</span>
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:.85rem">${s.playerName} <span style="color:var(--muted);font-size:.7rem">${s.civName||''}</span></div>
+              ${s.fallacyName ? `<div style="font-size:.7rem;color:var(--muted)">🃏 ${s.fallacyName}</div>` : ''}
+              ${s.factTitle ? `<div style="font-size:.7rem;color:var(--muted)">📜 ${s.factTitle}</div>` : ''}
+            </div>
+            <span class="speech-role ${s.role==='attack'?'atk':'def'}">${s.role==='attack'?'Атака':'Захист'}</span>
+          </div>`).join('')}
+        ${(msg.speeches||[]).length===0 ? '<div style="color:var(--muted);font-size:.8rem;text-align:center;padding:1rem">Виступів не було</div>' : ''}
+      </div>
+      <div style="font-size:.8rem;color:var(--muted);text-align:center" id="rating-progress">
+        Підтверджено: 0 / ${Object.keys(players).length}
+      </div>
+    </div>`;
+}
+
+function updateRatingProgress() {
+  const el = document.getElementById('rating-progress');
+  if (el) el.textContent = `Підтверджено: ${ratingData.submitted} / ${ratingData.total}`;
+}
+
+function renderMapPhase(msg) {
+  const lp = document.getElementById('left-panel');
+  lp.innerHTML = `<svg id="host-hex-svg" viewBox="0 0 0 0" xmlns="http://www.w3.org/2000/svg" style="flex:1;width:100%"></svg>`;
+  const rp = document.getElementById('right-panel');
+  rp.innerHTML = `
+    <div class="card-block">
+      <div class="block-label">Захват</div>
+      <div class="map-legend" id="map-legend"></div>
+    </div>`;
+  renderMap(msg.map);
+  renderMapLegend(msg.players||Object.values(players));
+}
+
+function hexPts(cx, cy, r) {
+  return Array.from({length:6},(_,i)=>{
+    const a=Math.PI/180*(60*i-30);
+    return `${cx+r*Math.cos(a)},${cy+r*Math.sin(a)}`;
   }).join(' ');
 }
 
-function renderMap() {
-  if (!map) return;
+function renderMap(map) {
   const svg = document.getElementById('host-hex-svg');
-  if (!svg) return;
-  const R = 18;
-  const W = R * Math.sqrt(3);
-  const PAD = R;
-  const GRID = map.grid || 11;
-  const totalW = GRID * W + PAD * 2;
-  const totalH = GRID * R * 2 * 0.75 + R * 0.5 + PAD * 2;
-  svg.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
-
+  if (!svg || !map) return;
+  const R=16, W=R*Math.sqrt(3), PAD=R;
+  const G=map.grid, W2=G*W+PAD*2, H2=G*R*2*0.75+R*0.5+PAD*2;
+  svg.setAttribute('viewBox',`0 0 ${W2} ${H2}`);
   svg.innerHTML = map.cells.map(cell => {
-    const cx = PAD + cell.col * W + (cell.row % 2 === 1 ? W/2 : 0) + W/2;
-    const cy = PAD + cell.row * R * 2 * 0.75 + R;
-    const owner = cell.owner ? players[cell.owner] : null;
-    const fill = owner ? owner.color : '#1e1e2e';
-    const stroke = 'rgba(0,0,0,0.4)';
-    return `<g>
-      <polygon points="${hexPoints(cx, cy, R-1)}" fill="${fill}" stroke="${stroke}" stroke-width="0.8"/>
-      ${owner && cell.dist === 0 ? `<circle cx="${cx}" cy="${cy}" r="4" fill="rgba(255,255,255,0.3)"/>` : ''}
-    </g>`;
+    const cx=PAD+cell.col*W+(cell.row%2===1?W/2:0)+W/2;
+    const cy=PAD+cell.row*R*2*0.75+R;
+    const owner=cell.owner?players[cell.owner]:null;
+    const fill=owner?owner.color:'#0f0f1a';
+    return `<polygon points="${hexPts(cx,cy,R-1)}" fill="${fill}" stroke="#0a0a0f" stroke-width="0.8"/>`;
   }).join('');
 }
 
-function renderScoresSidebar(playerList, roundScores) {
-  const el = document.getElementById('scores-sidebar');
-  el.innerHTML = playerList.map(p => {
-    const territories = map ? map.cells.filter(c => c.owner === p.id).length : 0;
-    return `
-      <div class="score-card">
-        <div class="score-card-dot" style="background:${p.color}"></div>
-        <div class="score-card-info">
-          <div class="score-card-name">${p.name}</div>
-          <div class="score-card-territories">${territories} тер. · +${roundScores[p.id] || 0} очок</div>
-        </div>
-        <div class="score-card-pts">${p.score}</div>
-      </div>
-    `;
-  }).join('');
-}
-
-// ── ROUND END ────────────────────────────────────────────────────────────────
-function renderRoundEnd(playerList) {
-  const sorted = [...playerList].sort((a, b) => b.score - a.score);
-  const el = document.getElementById('results-list');
-  el.innerHTML = sorted.map((p, i) => `
-    <div class="result-item" style="animation-delay:${i * 0.1}s">
-      <div class="result-rank ${i === 0 ? 'first' : ''}">${i + 1}</div>
-      <div class="player-dot" style="background:${p.color}; width:14px;height:14px;border-radius:50%;flex-shrink:0"></div>
-      <div class="result-name">${p.name}</div>
-      <div class="result-score">${p.score} очк</div>
-    </div>
-  `).join('');
-}
-
-// ── TIMER BAR ─────────────────────────────────────────────────────────────────
-function startTimerBar(endTime) {
-  clearInterval(timerInterval);
-  const bars = document.querySelectorAll('.timer-bar');
-  timerInterval = setInterval(() => {
-    const remaining = endTime - Date.now();
-    const total = endTime - (endTime - remaining); // rough
-    bars.forEach(bar => {
-      const pct = Math.max(0, remaining / 30000 * 100);
-      bar.style.width = pct + '%';
-    });
-    if (remaining <= 0) clearInterval(timerInterval);
-  }, 100);
-}
-
-// ── ACTIONS ───────────────────────────────────────────────────────────────────
-function startGame() {
-  ws.send(JSON.stringify({ type: 'start_game' }));
-}
-
-function nextPhase() {
-  ws.send(JSON.stringify({ type: 'next_phase' }));
-}
-
-// ── INIT ──────────────────────────────────────────────────────────────────────
-// ── SHARED FALLACIES ────────────────────────────────────────────────────────
-function renderSharedFallacies(cards) {
-  const el = document.getElementById('shared-fallacy-cards');
+function renderMapLegend(plist) {
+  const el = document.getElementById('map-legend');
   if (!el) return;
-  const tagColors = {
-    'атака': '#e63946', 'спотворення': '#f4a261', 'логіка': '#118ab2',
-    'авторитет': '#8ecae6', 'маніпуляція': '#e9c46a', 'відволікання': '#2a9d8f', 'нейтральна': '#606c38'
-  };
-  el.innerHTML = cards.map(c => {
-    const tagColor = tagColors[c.tag] || '#4a90d9';
-    const diffStars = '★'.repeat(c.difficulty || 1) + '☆'.repeat(4 - (c.difficulty || 1));
-    return `
-      <div style="background:var(--surface);border:1px solid ${tagColor}44;border-radius:10px;padding:1rem;display:flex;flex-direction:column;gap:0.5rem;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span style="background:${tagColor}22;color:${tagColor};font-family:'Unbounded',sans-serif;font-size:0.55rem;padding:0.2rem 0.6rem;border-radius:100px;letter-spacing:0.1em;text-transform:uppercase">${c.tag || ''}</span>
-          <span style="color:${tagColor};font-size:0.65rem">${diffStars}</span>
-        </div>
-        <div style="font-family:'Unbounded',sans-serif;font-size:0.75rem;font-weight:700;line-height:1.3">${c.name}</div>
-        <div style="font-size:0.7rem;color:var(--muted);line-height:1.5">${c.hint || c.desc}</div>
+  el.innerHTML = (plist||[]).map(p => `
+    <div class="leg-item">
+      <div class="leg-dot" style="background:${p.color}"></div>
+      <span style="font-size:.9rem">${p.civEmoji||'👤'}</span>
+      <div>
+        <div style="font-weight:600">${p.name}</div>
+        <div style="font-size:.65rem;color:var(--muted)">${p.civName||''} · ${p.score||0} балів</div>
       </div>
-    `;
-  }).join('');
+    </div>`).join('');
 }
 
+function renderRoundEnd(msg) {
+  const sorted = [...(msg.players||Object.values(players))].sort((a,b)=>b.score-a.score);
+  const lp = document.getElementById('left-panel');
+  lp.innerHTML = `
+    <div class="block-label" style="font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)">
+      Підсумки раунду ${round}
+    </div>
+    <div class="podium">
+      ${sorted.map((p,i)=>`
+        <div class="podium-card">
+          <div class="podium-rank" style="color:${i===0?'var(--gold)':i===1?'#aaa':'var(--muted)'}">#${i+1}</div>
+          <span style="font-size:2rem">${p.civEmoji||'👤'}</span>
+          <div>
+            <div style="font-weight:700">${p.name}</div>
+            <div style="font-size:.7rem;color:var(--muted)">${p.civName||''}</div>
+          </div>
+          <div class="podium-pts" style="color:${p.color}">${p.score}</div>
+        </div>`).join('')}
+    </div>`;
+
+  const rp = document.getElementById('right-panel');
+  if (msg.map) {
+    rp.innerHTML = `<svg id="host-hex-svg" viewBox="0 0 0 0" style="width:100%;flex:1"></svg>`;
+    window._map = msg.map; renderMap(msg.map);
+  }
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function startGame() { ws.send(JSON.stringify({type:'start_game'})); }
+function nextPhase() { ws.send(JSON.stringify({type:'next_phase'})); }
 
 connect();
 </script>
