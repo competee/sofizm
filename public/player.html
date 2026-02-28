@@ -297,8 +297,8 @@
 
   .map-grid-phone {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 3px;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 2px;
     margin-bottom: 1rem;
   }
 
@@ -646,6 +646,21 @@ function markVoteCast() {
 }
 
 // ── MAP ───────────────────────────────────────────────────────────────────────
+function isAdjacentToMe(cellId) {
+  if (!mapData) return false;
+  const cell = mapData.cells.find(c => c.id === cellId);
+  if (!cell || cell.owner === playerId) return false;
+  return [
+    { row: cell.row - 1, col: cell.col },
+    { row: cell.row + 1, col: cell.col },
+    { row: cell.row,     col: cell.col - 1 },
+    { row: cell.row,     col: cell.col + 1 },
+  ].some(n => {
+    const nb = mapData.cells.find(c => c.row === n.row && c.col === n.col);
+    return nb && nb.owner === playerId;
+  });
+}
+
 function renderMapPhone() {
   if (!mapData) return;
   const grid = document.getElementById('map-grid-phone');
@@ -654,15 +669,15 @@ function renderMapPhone() {
     const bg = owner ? owner.color : 'var(--border)';
     const isMe = cell.owner === playerId;
     const isSelected = selectedCells.includes(cell.id);
-    const capturable = !isMe && capturePoints > 0;
+    const adjacent = !isMe && capturePoints > 0 && isAdjacentToMe(cell.id);
     const cls = [
       isMe ? 'mine' : '',
-      capturable ? 'capturable' : '',
+      adjacent ? 'capturable' : '',
       isSelected ? 'selected' : '',
     ].filter(Boolean).join(' ');
 
     return `<div class="map-cell-phone ${cls}"
-      style="background:${bg}${isSelected ? '' : ''}"
+      style="background:${bg}"
       data-id="${cell.id}"
       onclick="toggleCell(${cell.id})"></div>`;
   }).join('');
@@ -672,6 +687,7 @@ function toggleCell(cellId) {
   if (capturePoints <= 0) return;
   const cell = mapData.cells.find(c => c.id === cellId);
   if (!cell || cell.owner === playerId) return;
+  if (!isAdjacentToMe(cellId)) return; // тільки прилеглі
 
   const idx = selectedCells.indexOf(cellId);
   if (idx >= 0) {
