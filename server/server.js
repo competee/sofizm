@@ -245,6 +245,19 @@ function gotoAttackPrep(room) {
 
   room.currentAttack = { attackerId, defenderId: null, factId: null, fallacyId: null, attackerCards: cards, defenderCards: null };
 
+  // Для кожної цілі — факти конфронтації з атакуючим
+  const factsPreview = targets.reduce((acc, t) => {
+    if (!attacker.civId || !t.civId) {
+      acc[t.id] = [];
+    } else {
+      acc[t.id] = getConfrontationFacts(attacker.civId, t.civId)
+        .map(f => ({ id: f.id, title: f.title }));
+    }
+    return acc;
+  }, {});
+
+  console.log(`[Attack] ${attacker.name}(${attacker.civId}) vs targets: ${targets.map(t=>`${t.name}(${t.civId}):${factsPreview[t.id]?.length||0}facts`).join(', ')}`);
+
   broadcast(room, {
     type: 'phase', phase: room.phase,
     attackerId, attackerName: attacker.name,
@@ -259,10 +272,7 @@ function gotoAttackPrep(room) {
     type: 'your_attack_turn',
     cards,
     targets,
-    factsPreview: targets.reduce((acc, t) => {
-      acc[t.id] = getConfrontationFacts(attacker.civId, t.civId).map(f => ({ id: f.id, title: f.title }));
-      return acc;
-    }, {}),
+    factsPreview,
   });
 
   startTimer(room, 60, () => {

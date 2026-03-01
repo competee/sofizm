@@ -120,11 +120,16 @@
   /* ── RATING ── */
   .rating-list{display:flex;flex-direction:column;gap:.5rem;flex:1}
   .rating-item{background:var(--surface);border:2px solid var(--border);border-radius:12px;
-    padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem;cursor:grab}
-  .rating-item.dragging{opacity:.5;cursor:grabbing}
+    padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem;cursor:pointer;
+    transition:all .15s;user-select:none}
+  .rating-item.selected-rank-1{border-color:var(--gold);background:#e9c46a18}
+  .rating-item.selected-rank-2{border-color:#aaa;background:#aaa3}
+  .rating-item.selected-rank-3{border-color:var(--blue);background:#457b9d18}
   .rating-rank{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--muted);width:2rem;text-align:center}
   .rating-rank.gold{color:var(--gold)}
   .rating-rank.silver{color:#aaa}
+  .rating-rank.bronze{color:var(--blue)}
+  .rank-hint{font-size:.7rem;color:var(--muted);text-align:center;padding:.25rem 0}
 
   /* ── MAP ── */
   #player-hex-svg{width:100%;max-height:45vh;display:block}
@@ -251,9 +256,11 @@
     <div class="phase-tag">⭐ Рейтинг</div>
     <div class="phase-h">Хто виступив найкраще?</div>
   </div>
-  <div style="font-size:.8rem;color:var(--muted)">Перетягніть гравців — від найкращого до найгіршого</div>
+  <div class="rank-hint" id="rank-instruction">Натисніть на гравця щоб дати йому 🥇 1 місце</div>
   <div class="rating-list" id="rating-list"></div>
-  <button class="btn-confirm" id="btn-rating-confirm" onclick="submitRating()">⭐ Підтвердити рейтинг</button>
+  <button class="btn-confirm" id="btn-rating-confirm" onclick="submitRating()" disabled>
+    ⭐ Підтвердити рейтинг
+  </button>
 </div>
 
 <!-- MAP -->
@@ -266,6 +273,7 @@
     <div>
       <div style="font-size:.7rem;color:var(--muted)">Очки для захвату</div>
       <div class="capture-pts-num" id="capture-pts">0</div>
+      <div id="capture-info" style="font-size:.7rem;color:var(--muted)"></div>
     </div>
     <button class="btn-capture" id="btn-capture" onclick="confirmCapture()" disabled>Захопити</button>
   </div>
@@ -291,7 +299,6 @@ let myCivId=null, myCivName=null, myCivEmoji=null;
 let capturePoints=0, selectedCells=[], mapData=null, mapPlayers={};
 let attackState={ targetId:null, factId:null, fallacyId:null, cards:[], targets:[], factsPreview:{} };
 let defenseState={ cards:[], fallacyId:null };
-let ratingOrder=[];
 let players={};
 
 // ── CONNECT ───────────────────────────────────────────────────────────────────
@@ -383,8 +390,15 @@ function handle(msg){
       capturePoints=msg.capturePoints||0;
       mapData=msg.map;
       if(msg.players){ mapPlayers={}; msg.players.forEach(p=>mapPlayers[p.id]=p); }
-      document.getElementById('capture-pts').textContent=capturePoints;
       selectedCells=[];
+      document.getElementById('capture-pts').textContent=capturePoints;
+      const capBtn=document.getElementById('btn-capture');
+      if(capBtn) capBtn.disabled=true;
+      // Показуємо пояснення якщо нема очок
+      const capInfo=document.getElementById('capture-info');
+      if(capInfo) capInfo.textContent=capturePoints<=0
+        ? 'Немає очок захвату цього раунду'
+        : `Оберіть ${capturePoints} сусідніх клітинок`;
       renderHexMap();
       showScreen('screen-map');
       break;
@@ -432,7 +446,7 @@ function handlePhase(msg){
       }
       break;
     case 'rating':
-      renderRating(); showScreen('screen-rating'); break;
+      renderRating(msg); showScreen('screen-rating'); break;
     case 'round_end':
       setWaiting('🏁','Кінець раунду','Наступний скоро...');
       showScreen('screen-waiting-game'); break;
@@ -476,12 +490,13 @@ function renderAttackTurn(msg){
 
   // Цілі
   const tl=document.getElementById('target-list');
-  tl.innerHTML=msg.targets.map(t=>`
+  tl.innerHTML=(msg.targets||[]).map(t=>`
     <button class="target-btn" onclick="selectTarget('${t.id}',this)">
       <div class="target-btn-civ">${t.civEmoji||'👤'}</div>
       <div>
         <div style="font-weight:600;font-size:.9rem">${t.name}</div>
         <div style="font-size:.75rem;color:var(--muted)">${t.civName||''}</div>
+        <div style="font-size:.65rem;color:var(--blue)">${(msg.factsPreview||{})[t.id]?.length||0} фактів</div>
       </div>
     </button>`).join('');
 
@@ -503,8 +518,15 @@ function selectTarget(id,btn){
   btn.classList.add('selected');
   // Показуємо факти для цієї цілі
   const facts=attackState.factsPreview[id]||[];
-  document.getElementById('fact-section-label').style.display='block';
+  const label=document.getElementById('fact-section-label');
+  label.style.display='block';
+  label.textContent=facts.length>0 ? `Факт конфронтації (${facts.length} доступних)` : 'Факти конфронтації відсутні';
   const fl=document.getElementById('fact-list');
+  if(facts.length===0){
+    fl.innerHTML=`<div style="color:var(--muted);font-size:.8rem;padding:.5rem">Немає фактів для цієї пари цивілізацій</div>`;
+    checkAttackReady();
+    return;
+  }
   fl.innerHTML=facts.map(f=>`
     <button class="fact-btn" onclick="selectFact('${f.id}',this)">
       <div class="fact-btn-title">📜 ${f.title}</div>
@@ -570,55 +592,82 @@ function castCancelVote(vote){
 }
 
 // ── RATING ────────────────────────────────────────────────────────────────────
-function renderRating(){
+let ratingPicks = []; // [playerId, playerId, ...] від 1 до topCount місць
+let ratingTopCount = 1;
+
+function renderRating(msg){
   const plist=Object.values(players).filter(p=>p.id!==playerId);
-  ratingOrder=plist.map(p=>p.id);
+  ratingPicks=[];
+  ratingTopCount = msg?.topCount || (plist.length >= 5 ? 3 : plist.length >= 3 ? 2 : 1);
+  updateRatingInstruction();
   const rl=document.getElementById('rating-list');
-  rl.innerHTML=plist.map((p,i)=>`
-    <div class="rating-item" data-id="${p.id}" draggable="true">
-      <div class="rating-rank ${i===0?'gold':i===1?'silver':''}">${i+1}</div>
+  rl.innerHTML=plist.map(p=>`
+    <div class="rating-item" id="ri-${p.id}" onclick="tapRatingItem('${p.id}')">
+      <div class="rating-rank" id="rr-${p.id}">—</div>
       <div style="font-size:1.3rem">${p.civEmoji||'👤'}</div>
       <div>
         <div style="font-weight:600;font-size:.9rem">${p.name}</div>
         <div style="font-size:.7rem;color:var(--muted)">${p.civName||''}</div>
       </div>
     </div>`).join('');
-  initDragSort();
+  document.getElementById('btn-rating-confirm').disabled=true;
 }
 
-function initDragSort(){
-  const list=document.getElementById('rating-list');
-  let dragging=null;
-  list.querySelectorAll('.rating-item').forEach(item=>{
-    item.addEventListener('dragstart',()=>{ dragging=item; item.classList.add('dragging'); });
-    item.addEventListener('dragend',()=>{ item.classList.remove('dragging'); updateRatingOrder(); });
-    item.addEventListener('dragover',e=>{ e.preventDefault();
-      const after=getDragAfter(list,e.clientY);
-      if(after) list.insertBefore(dragging,after);
-      else list.appendChild(dragging);
-    });
+function updateRatingInstruction(){
+  const el=document.getElementById('rank-instruction');
+  if(!el) return;
+  const labels=['🥇 1 місце','🥈 2 місце','🥉 3 місце'];
+  const next=ratingPicks.length;
+  if(next < ratingTopCount){
+    el.textContent=`Натисніть на гравця → ${labels[next]||`${next+1} місце`}`;
+    el.style.color='var(--gold)';
+  } else {
+    el.textContent=`✓ Готово! Або натисніть щоб змінити`;
+    el.style.color='var(--teal)';
+  }
+}
+
+function tapRatingItem(pid){
+  const existIdx = ratingPicks.indexOf(pid);
+  if(existIdx >= 0){
+    // Знімаємо вибір — і всі після нього
+    ratingPicks = ratingPicks.slice(0, existIdx);
+  } else if(ratingPicks.length < ratingTopCount){
+    ratingPicks.push(pid);
+  } else {
+    // Всі місця зайняті — замінити останнє
+    ratingPicks[ratingTopCount-1] = pid;
+  }
+  refreshRatingUI();
+}
+
+function refreshRatingUI(){
+  const rankLabels=[{cls:'gold',sym:'🥇'},{cls:'silver',sym:'🥈'},{cls:'bronze',sym:'🥉'}];
+  // Скидаємо всі
+  document.querySelectorAll('.rating-item').forEach(el=>{
+    el.className='rating-item';
   });
-}
+  document.querySelectorAll('.rating-rank').forEach(el=>{ el.textContent='—'; el.className='rating-rank'; });
 
-function getDragAfter(list,y){
-  return [...list.querySelectorAll('.rating-item:not(.dragging)')]
-    .find(el=>el.getBoundingClientRect().top+el.getBoundingClientRect().height/2>y);
-}
-
-function updateRatingOrder(){
-  const items=document.querySelectorAll('#rating-list .rating-item');
-  ratingOrder=[...items].map(el=>el.dataset.id);
-  // Оновлюємо номери
-  items.forEach((el,i)=>{
-    const rank=el.querySelector('.rating-rank');
-    rank.textContent=i+1;
-    rank.className='rating-rank '+(i===0?'gold':i===1?'silver':'');
+  // Ставимо вибрані
+  ratingPicks.forEach((pid,i)=>{
+    const item=document.getElementById(`ri-${pid}`);
+    const rank=document.getElementById(`rr-${pid}`);
+    const lbl=rankLabels[i]||{cls:'',sym:`${i+1}`};
+    if(item) item.classList.add(`selected-rank-${i+1}`);
+    if(rank){ rank.textContent=lbl.sym; rank.className=`rating-rank ${lbl.cls}`; }
   });
+
+  updateRatingInstruction();
+  const allDone = ratingPicks.length >= Math.min(ratingTopCount, Object.values(players).filter(p=>p.id!==playerId).length);
+  document.getElementById('btn-rating-confirm').disabled = !allDone;
 }
 
 function submitRating(){
-  send({ type:'submit_rating', ranked:ratingOrder });
+  if(ratingPicks.length===0) return;
+  send({ type:'submit_rating', ranked:ratingPicks });
   document.getElementById('btn-rating-confirm').disabled=true;
+  document.getElementById('rank-instruction').textContent='✓ Рейтинг відправлено';
 }
 
 // ── FALLACY HELPER ────────────────────────────────────────────────────────────
@@ -667,47 +716,68 @@ function hexPts(cx,cy,r){
 function renderHexMap(){
   if(!mapData) return;
   const svg=document.getElementById('player-hex-svg');
-  const R=13,W=R*Math.sqrt(3),PAD=R;
+  if(!svg) return;
+  const R=14,W=R*Math.sqrt(3),PAD=R+2;
   const GRID=mapData.grid;
   const totalW=GRID*W+PAD*2,totalH=GRID*R*2*0.75+R*0.5+PAD*2;
   svg.setAttribute('viewBox',`0 0 ${totalW} ${totalH}`);
-  svg.innerHTML=mapData.cells.map(cell=>{
+  svg.style.touchAction='none';
+
+  let html='';
+  mapData.cells.forEach(cell=>{
     const cx=PAD+cell.col*W+(cell.row%2===1?W/2:0)+W/2;
     const cy=PAD+cell.row*R*2*0.75+R;
-    const owner=cell.owner?(mapPlayers[cell.owner]||players[cell.owner]):null;
-    const fill=owner?owner.color:'#1a1a2e';
     const isMe=cell.owner===playerId;
     const isSel=selectedCells.includes(cell.id);
     const adj=!isMe&&capturePoints>0&&isAdjacentToMe(cell.id);
-    const stroke=isSel?'#e9c46a':adj?'white':'rgba(0,0,0,0.3)';
-    const sw=isSel?2.5:adj?1.5:0.5;
-    return `<g onclick="toggleCell(${cell.id})" style="cursor:${adj||isSel?'pointer':'default'}">
-      <polygon points="${hexPts(cx,cy,R-1)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>
-      ${isMe?`<circle cx="${cx}" cy="${cy}" r="3" fill="rgba(255,255,255,0.4)"/>`:
-        isSel?`<circle cx="${cx}" cy="${cy}" r="3.5" fill="#e9c46a"/>`:
-        adj?`<polygon points="${hexPts(cx,cy,R-1)}" fill="white" opacity="0.08"/>`:''
-      }
-    </g>`;
-  }).join('');
+    const owner=cell.owner?(mapPlayers[cell.owner]||players[cell.owner]):null;
+    let fill=owner?owner.color:'#1a1a2e';
+    let stroke='rgba(0,0,0,0.3)', sw=0.5;
+    if(isSel){ stroke='#e9c46a'; sw=2.5; }
+    else if(adj){ stroke='rgba(255,255,255,0.7)'; sw=1.5; }
+    html+=`<polygon data-cell="${cell.id}" points="${hexPts(cx,cy,R-1)}"
+      fill="${fill}" stroke="${stroke}" stroke-width="${sw}"
+      style="cursor:${adj||isSel?'pointer':'default'}"/>`;
+    if(isMe) html+=`<circle cx="${cx}" cy="${cy}" r="3" fill="rgba(255,255,255,0.35)" pointer-events="none"/>`;
+    else if(isSel) html+=`<circle cx="${cx}" cy="${cy}" r="3.5" fill="#e9c46a" pointer-events="none"/>`;
+    else if(adj) html+=`<polygon points="${hexPts(cx,cy,R-1)}" fill="white" opacity="0.1" pointer-events="none"/>`;
+  });
+  svg.innerHTML=html;
+
+  // Вішаємо один обробник на SVG (event delegation) — працює і на touch і на mouse
+  svg.onclick=null; svg.ontouchend=null;
+  svg.addEventListener('pointerdown', handleMapPointer, {passive:false});
 }
+
+function handleMapPointer(e){
+  e.preventDefault();
+  const poly=e.target.closest('polygon[data-cell]');
+  if(!poly) return;
+  toggleCell(parseInt(poly.dataset.cell));
+}
+
 function toggleCell(cellId){
   if(capturePoints<=0) return;
   const cell=mapData.cells.find(c=>c.id===cellId);
   if(!cell||cell.owner===playerId) return;
   if(!isAdjacentToMe(cellId)) return;
   const idx=selectedCells.indexOf(cellId);
-  if(idx>=0) selectedCells.splice(idx,1);
+  if(idx>=0){ selectedCells.splice(idx,1); }
   else{ if(selectedCells.length>=capturePoints) return; selectedCells.push(cellId); }
   renderHexMap();
-  document.getElementById('btn-capture').disabled=selectedCells.length===0;
+  const btn=document.getElementById('btn-capture');
+  if(btn) btn.disabled=selectedCells.length===0;
 }
 function confirmCapture(){
   if(!selectedCells.length) return;
   send({ type:'capture', cellIds:selectedCells });
   capturePoints-=selectedCells.length;
   selectedCells=[];
-  document.getElementById('capture-pts').textContent=capturePoints;
-  document.getElementById('btn-capture').disabled=true;
+  const pts=document.getElementById('capture-pts');
+  if(pts) pts.textContent=capturePoints;
+  const btn=document.getElementById('btn-capture');
+  if(btn) btn.disabled=true;
+  renderHexMap();
 }
 
 // ── SCREENS ───────────────────────────────────────────────────────────────────
