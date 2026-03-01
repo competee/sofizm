@@ -488,17 +488,30 @@ function renderAttackTurn(msg){
   attackState={ targetId:null, factId:null, fallacyId:null,
     cards:msg.cards||[], targets:msg.targets||[], factsPreview:msg.factsPreview||{} };
 
-  // Цілі
+  // Debug: перевіримо що є в factsPreview
+  console.log('[Attack] factsPreview keys:', Object.keys(attackState.factsPreview));
+  Object.entries(attackState.factsPreview).forEach(([pid, facts]) => {
+    console.log(`  target ${pid}: ${facts.length} facts`);
+  });
+
+  // Цілі — використовуємо data-target-id замість inline onclick
   const tl=document.getElementById('target-list');
   tl.innerHTML=(msg.targets||[]).map(t=>`
-    <button class="target-btn" onclick="selectTarget('${t.id}',this)">
+    <button class="target-btn" data-target-id="${t.id}">
       <div class="target-btn-civ">${t.civEmoji||'👤'}</div>
       <div>
         <div style="font-weight:600;font-size:.9rem">${t.name}</div>
         <div style="font-size:.75rem;color:var(--muted)">${t.civName||''}</div>
-        <div style="font-size:.65rem;color:var(--blue)">${(msg.factsPreview||{})[t.id]?.length||0} фактів</div>
+        <div style="font-size:.65rem;color:var(--blue)">${(attackState.factsPreview[t.id]||[]).length} фактів</div>
       </div>
     </button>`).join('');
+
+  // Вішаємо один обробник на список цілей
+  tl.onclick = function(e) {
+    const btn = e.target.closest('[data-target-id]');
+    if (!btn) return;
+    selectTarget(btn.dataset.targetId, btn);
+  };
 
   document.getElementById('fact-section-label').style.display='none';
   document.getElementById('fact-list').innerHTML='';
@@ -512,32 +525,44 @@ function renderAttackTurn(msg){
   showScreen('screen-attack');
 }
 
-function selectTarget(id,btn){
-  attackState.targetId=id; attackState.factId=null;
+function selectTarget(id, btn){
+  attackState.targetId = id;
+  attackState.factId = null;
   document.querySelectorAll('.target-btn').forEach(b=>b.classList.remove('selected'));
   btn.classList.add('selected');
-  // Показуємо факти для цієї цілі
-  const facts=attackState.factsPreview[id]||[];
-  const label=document.getElementById('fact-section-label');
-  label.style.display='block';
-  label.textContent=facts.length>0 ? `Факт конфронтації (${facts.length} доступних)` : 'Факти конфронтації відсутні';
-  const fl=document.getElementById('fact-list');
-  if(facts.length===0){
-    fl.innerHTML=`<div style="color:var(--muted);font-size:.8rem;padding:.5rem">Немає фактів для цієї пари цивілізацій</div>`;
+
+  const facts = attackState.factsPreview[id] || [];
+  console.log('[selectTarget] id=', id, 'facts=', facts.length, 'preview keys=', Object.keys(attackState.factsPreview));
+
+  const label = document.getElementById('fact-section-label');
+  label.style.display = 'block';
+  label.textContent = facts.length > 0
+    ? `Факт конфронтації (${facts.length} доступних)`
+    : 'Факти конфронтації відсутні для цієї пари';
+
+  const fl = document.getElementById('fact-list');
+  if(facts.length === 0){
+    fl.innerHTML = `<div style="color:var(--muted);font-size:.8rem;padding:.5rem 0">
+      Немає фактів між цими цивілізаціями</div>`;
     checkAttackReady();
     return;
   }
-  fl.innerHTML=facts.map(f=>`
-    <button class="fact-btn" onclick="selectFact('${f.id}',this)">
+
+  fl.innerHTML = facts.map(f=>`
+    <button class="fact-btn" data-fact-id="${f.id}">
       <div class="fact-btn-title">📜 ${f.title}</div>
     </button>`).join('');
-  checkAttackReady();
-}
 
-function selectFact(id,btn){
-  attackState.factId=id;
-  document.querySelectorAll('.fact-btn').forEach(b=>b.classList.remove('selected'));
-  btn.classList.add('selected');
+  // Event delegation для фактів
+  fl.onclick = function(e) {
+    const btn = e.target.closest('[data-fact-id]');
+    if (!btn) return;
+    document.querySelectorAll('.fact-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    attackState.factId = btn.dataset.factId;
+    checkAttackReady();
+  };
+
   checkAttackReady();
 }
 
