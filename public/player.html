@@ -71,7 +71,7 @@
   .target-btn.selected{border-color:var(--red)}
   .target-btn-civ{font-size:1.5rem}
 
-  .fact-list{display:flex;flex-direction:column;gap:.5rem;overflow-y:auto;max-height:200px}
+  .fact-list{display:flex;flex-direction:column;gap:.5rem}
   .fact-btn{background:var(--surface);border:2px solid var(--border);border-radius:10px;
     padding:.75rem;cursor:pointer;transition:all .2s;text-align:left;width:100%}
   .fact-btn.selected{border-color:var(--gold)}
@@ -361,6 +361,9 @@ function handle(msg){
       break;
 
     case 'your_attack_turn':
+      console.log('[your_attack_turn] keys:', Object.keys(msg));
+      console.log('[your_attack_turn] factsPreview:', JSON.stringify(msg.factsPreview));
+      console.log('[your_attack_turn] targets:', (msg.targets||[]).map(t=>t.id+':'+t.name));
       renderAttackTurn(msg); break;
 
     case 'your_defense_turn':
@@ -484,96 +487,115 @@ function chooseCiv(civId,btn){
 }
 
 // ── ATTACK TURN ───────────────────────────────────────────────────────────────
+var _atkFacts = [];
+var _atkFactsPreview = {};
+
 function renderAttackTurn(msg){
-  attackState={ targetId:null, factId:null, fallacyId:null,
-    cards:msg.cards||[], targets:msg.targets||[], factsPreview:msg.factsPreview||{} };
+  _atkFactsPreview = msg.factsPreview || {};
+  _atkFacts = [];
 
-  // Debug: перевіримо що є в factsPreview
-  console.log('[Attack] factsPreview keys:', Object.keys(attackState.factsPreview));
-  Object.entries(attackState.factsPreview).forEach(([pid, facts]) => {
-    console.log(`  target ${pid}: ${facts.length} facts`);
+  // Очистити
+  var tl = document.getElementById('target-list');
+  var fl = document.getElementById('fact-list');
+  var lbl = document.getElementById('fact-section-label');
+  var btn = document.getElementById('btn-attack-confirm');
+  tl.innerHTML = '';
+  fl.innerHTML = '';
+  lbl.style.display = 'none';
+  btn.disabled = true;
+
+  // Глобальний стан атаки
+  window._atk = { targetId: null, factId: null, fallacyId: null };
+
+  // Будуємо кнопки цілей через DOM API (не innerHTML з onclick)
+  (msg.targets||[]).forEach(function(t){
+    var b = document.createElement('button');
+    b.className = 'target-btn';
+    b.style.width = '100%';
+    var cnt = (_atkFactsPreview[t.id]||[]).length;
+    b.innerHTML = '<div class="target-btn-civ">' + (t.civEmoji||'👤') + '</div>'
+      + '<div style="text-align:left">'
+      + '<div style="font-weight:600;font-size:.9rem">' + t.name + '</div>'
+      + '<div style="font-size:.75rem;color:var(--muted)">' + (t.civName||'') + '</div>'
+      + '<div style="font-size:.65rem;color:#457b9d">' + cnt + ' фактів</div>'
+      + '</div>';
+    // Замикаємо targetId через let/var у forEach
+    (function(targetId){
+      b.addEventListener('click', function(){
+        // Знімаємо вибір з усіх
+        document.querySelectorAll('#target-list .target-btn').forEach(function(x){ x.classList.remove('selected'); });
+        b.classList.add('selected');
+        // Оновлюємо стан
+        window._atk.targetId = targetId;
+        window._atk.factId = null;
+        // Відображаємо факти
+        showFactsFor(targetId);
+      });
+    })(t.id);
+    tl.appendChild(b);
   });
 
-  // Цілі — використовуємо data-target-id замість inline onclick
-  const tl=document.getElementById('target-list');
-  tl.innerHTML=(msg.targets||[]).map(t=>`
-    <button class="target-btn" data-target-id="${t.id}">
-      <div class="target-btn-civ">${t.civEmoji||'👤'}</div>
-      <div>
-        <div style="font-weight:600;font-size:.9rem">${t.name}</div>
-        <div style="font-size:.75rem;color:var(--muted)">${t.civName||''}</div>
-        <div style="font-size:.65rem;color:var(--blue)">${(attackState.factsPreview[t.id]||[]).length} фактів</div>
-      </div>
-    </button>`).join('');
-
-  // Вішаємо один обробник на список цілей
-  tl.onclick = function(e) {
-    const btn = e.target.closest('[data-target-id]');
-    if (!btn) return;
-    selectTarget(btn.dataset.targetId, btn);
-  };
-
-  document.getElementById('fact-section-label').style.display='none';
-  document.getElementById('fact-list').innerHTML='';
-
-  // Картки
-  renderFallacyMiniList('attack-fallacies', msg.cards||[], id=>{
-    attackState.fallacyId=id; checkAttackReady();
+  // Картки-софізми
+  renderFallacyMiniList('attack-fallacies', msg.cards||[], function(id){
+    window._atk.fallacyId = id;
+    atkCheck();
   });
 
-  document.getElementById('btn-attack-confirm').disabled=true;
   showScreen('screen-attack');
 }
 
-function selectTarget(id, btn){
-  attackState.targetId = id;
-  attackState.factId = null;
-  document.querySelectorAll('.target-btn').forEach(b=>b.classList.remove('selected'));
-  btn.classList.add('selected');
+function showFactsFor(targetId){
+  var facts = _atkFactsPreview[targetId] || [];
+  _atkFacts = facts;
 
-  const facts = attackState.factsPreview[id] || [];
-  console.log('[selectTarget] id=', id, 'facts=', facts.length, 'preview keys=', Object.keys(attackState.factsPreview));
+  var lbl = document.getElementById('fact-section-label');
+  var fl = document.getElementById('fact-list');
 
-  const label = document.getElementById('fact-section-label');
-  label.style.display = 'block';
-  label.textContent = facts.length > 0
-    ? `Факт конфронтації (${facts.length} доступних)`
-    : 'Факти конфронтації відсутні для цієї пари';
+  lbl.style.display = 'block';
+  lbl.textContent = 'Факт конфронтації (' + facts.length + ' доступних)';
 
-  const fl = document.getElementById('fact-list');
+  fl.innerHTML = '';
+
   if(facts.length === 0){
-    fl.innerHTML = `<div style="color:var(--muted);font-size:.8rem;padding:.5rem 0">
-      Немає фактів між цими цивілізаціями</div>`;
-    checkAttackReady();
+    var msg = document.createElement('div');
+    msg.style.cssText = 'padding:.5rem;color:#888;font-size:.8rem';
+    msg.textContent = 'Немає фактів для цієї пари цивілізацій';
+    fl.appendChild(msg);
+    atkCheck();
     return;
   }
 
-  fl.innerHTML = facts.map(f=>`
-    <button class="fact-btn" data-fact-id="${f.id}">
-      <div class="fact-btn-title">📜 ${f.title}</div>
-    </button>`).join('');
+  facts.forEach(function(f, i){
+    var b = document.createElement('button');
+    b.className = 'fact-btn';
+    b.innerHTML = '<div class="fact-btn-title">📜 ' + f.title + '</div>';
+    (function(fact){
+      b.addEventListener('click', function(){
+        document.querySelectorAll('#fact-list .fact-btn').forEach(function(x){ x.classList.remove('selected'); });
+        b.classList.add('selected');
+        window._atk.factId = fact.id;
+        atkCheck();
+      });
+    })(f);
+    fl.appendChild(b);
+  });
 
-  // Event delegation для фактів
-  fl.onclick = function(e) {
-    const btn = e.target.closest('[data-fact-id]');
-    if (!btn) return;
-    document.querySelectorAll('.fact-btn').forEach(b=>b.classList.remove('selected'));
-    btn.classList.add('selected');
-    attackState.factId = btn.dataset.factId;
-    checkAttackReady();
-  };
-
-  checkAttackReady();
+  atkCheck();
 }
 
-function checkAttackReady(){
-  const ok=attackState.targetId&&attackState.factId&&attackState.fallacyId;
-  document.getElementById('btn-attack-confirm').disabled=!ok;
+function atkCheck(){
+  var d = window._atk || {};
+  var ok = d.targetId && d.factId && d.fallacyId;
+  var btn = document.getElementById('btn-attack-confirm');
+  if(btn) btn.disabled = !ok;
 }
+
+function checkAttackReady(){ atkCheck(); }
 
 function confirmAttack(){
-  send({ type:'choose_attack', defenderId:attackState.targetId,
-    factId:attackState.factId, fallacyId:attackState.fallacyId });
+  var d = window._atk || {};
+  if(!d.targetId || !d.factId || !d.fallacyId) return;
+  send({ type:'choose_attack', defenderId:d.targetId, factId:d.factId, fallacyId:d.fallacyId });
   setWaiting('🗣️','Тепер виступайте вголос!','Використайте свій факт і софізм');
   showScreen('screen-waiting-game');
 }
